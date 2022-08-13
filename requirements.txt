@@ -3,3 +3,4 @@ py3Dmol
 pyscf
 pandas
 numpy
+scipy
