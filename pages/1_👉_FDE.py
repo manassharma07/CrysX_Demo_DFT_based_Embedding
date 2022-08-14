@@ -795,6 +795,9 @@ if show_subsystem_information:
     pd_mol_A.index += 1 
     # print the dataframe object
     col1.write(pd_mol_A)
+    col1.write('*Charge*: '+str(molA.charge))
+    col1.write('*Spin*: '+str(molA.spin))
+    col1.write('*No. of basis functions*: '+str(molA.nao))
 
     # Create a dataframe for atomic coordinates
     # Create an array of Atomic symbols
@@ -810,6 +813,9 @@ if show_subsystem_information:
     pd_mol_B.index += 1 
     # print the dataframe object
     col2.write(pd_mol_B)
+    col2.write('*Charge*: '+str(molB.charge))
+    col2.write('*Spin*: '+str(molB.spin))
+    col2.write('*No. of basis functions*: '+str(molB.nao))
 
 # st.snow()
 
