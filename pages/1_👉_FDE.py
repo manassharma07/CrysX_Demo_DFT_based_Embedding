@@ -9,170 +9,517 @@ import pandas as pd
 import scipy
 
 # Some global variables (Yes unfortunately I had to use them)
-dmB = 0
 isSupermolecularBasis = False
-mfTot = None
-molTot = None
-kedf = ''
-ks = None
+kedf = '521'
+embPot = 0
+isFrozen = True
+isXCchange = False
+isNucAdensB = True
+isNucAauxB = False
 
-# st.write(rks.get_veff)
-# get_veff_original = scf.RHF.get_veff 
-# energy_elec_original = scf.RHF.energy_elec
-# energy_tot_original = scf.RHF.energy_tot
-
-def energy_elec(ks, dm=None, h1e=None, vhf=None):
-    r'''
-    '''
-    if dm is None: dm = ks.make_rdm1()
-    if h1e is None: h1e = ks.get_hcore()
-    if vhf is None or getattr(vhf, 'ecoul', None) is None:
-        vhf = ks.get_veff(ks.mol, dm)
-    e1 = np.einsum('ij,ji->', h1e, dm).real
-    ecoul = vhf.ecoul.real
-    exc_Tot = vhf.exc_tot.real
-    exc_A = vhf.exc.real
-    e_kedf_tot = vhf.e_kedf_tot.real
-    e_kedf_A = vhf.e_kedf_A.real
-    e2 = ecoul + exc_Tot - exc_A
-    ks.scf_summary['e1'] = e1
-    ks.scf_summary['coul'] = ecoul
-    ks.scf_summary['exc'] = exc_A
-    return e1+e2+e_kedf_tot-e_kedf_A+exc_Tot, e2
-
-def energy_tot(mf, dm=None, h1e=None, vhf=None):
-    r'''Total Hartree-Fock energy, electronic part plus nuclear repulstion
-    See :func:`scf.hf.energy_elec` for the electron part
-    Note this function has side effects which cause mf.scf_summary updated.
-    '''
-    global mfTot
-    nuc = mfTot.energy_nuc()
-    e_tot = mf.energy_elec(dm, h1e, vhf)[0] + nuc
-    mf.scf_summary['nuc'] = nuc.real
-    return e_tot
-
-
-
-def get_veff(mol=None, dm=None, dm_last=0, vhf_last=0, hermi=1, *args, **kwargs):
-    '''Coulomb + XC functional
-    '''
-    global dmB, isSupermolecularBasis, mfTot, ks
-    if mol is None: mol = ks.mol
-    if dm is None: dm = ks.make_rdm1()
-    dft.rks.initialize_grids(mol, dm)
-
-    if isSupermolecularBasis:
-        dmTot = dm + dmB
-    else:
-        dmTot = scipy.linalg.block_diag(dm, dmB)
-
-    ground_state = (isinstance(dm, np.ndarray) and dm.ndim == 2)
-
-    ni = ks._numint
-    if hermi == 2:  # because rho = 0
-        n, exc, vxc = 0, 0, 0
-    else:
-        max_memory = ks.max_memory - lib.current_memory()[0]
-        # Tot VXC
-        n, exc, vxc = ni.nr_rks(molTot, mfTot.grids, ks.xc, dmTot, max_memory=max_memory)[0:mol.nao_nr(),0:mol.nao_nr()]
-        # VXC for A
-        n, exc_A, vxc_A = ni.nr_rks(mol, ks.grids, ks.xc, dm, max_memory=max_memory)
-        # Nadd vxc
-        vxc = vxc - vxc_A
-        if ks.nlc:
-            assert 'VV10' in ks.nlc.upper()
-            _, enlc, vnlc = ni.nr_rks(mol, ks.nlcgrids, ks.xc+'__'+ks.nlc, dm,
-                                      max_memory=max_memory)
-            exc += enlc
-            vxc += vnlc
+def nucAux(molA, molB, molTotal, dmatB):
+    global isSupermolecular, basisSetA
+    #auxmolB = df.addons.make_auxmol(molB, auxbasis='unc-weigend')
+    auxmolB = df.addons.make_auxmol(molB, auxbasis='weigend')
+    #auxmolB.cart=True
+    #molB.cart=True
+    # ints_3c is the 3-center integral tensor (ij|P), where i and j are the
+    # indices of AO basis and P is the auxiliary basis
+    ints_3c2e_BB = df.incore.aux_e2(molB, auxmolB, intor='int3c2e')
+    ints_2c2e_BB = auxmolB.intor('int2c2e')
     
-    # KEDF
-    n, e_kedf_tot, v_kedf_tot = ni.nr_rks(molTot, mfTot.grids, ks.kedf, dmTot, max_memory=max_memory)
-    n, e_kedf_A, v_kedf_A = ni.nr_rks(mol, ks.grids, ks.kedf, dm, max_memory=max_memory)
+
+    nao = molB.nao
+    naux = auxmolB.nao
+    print(naux)
+
+    # Compute the DF coefficients (df_coef) of aux basis of B
+    df_coef = scipy.linalg.solve(ints_2c2e_BB, ints_3c2e_BB.reshape(nao*nao, naux).T)
+    df_coef = df_coef.reshape(naux, nao, nao)
+    
+    df_coeff = np.einsum('ijk,jk', df_coef, dmatB)
+    #print(df_coeff.shape)
+    
+    #----Create a molecule with a ghost atom with a basis function with exp=0
+    #----Then add the atoms of A as they are needed for nuclei of A
+    #----These atoms can be assigned any basis since it doesn't matter, but we assign them
+    #----just the basis of A so that when we use molA.nbas or something we get the correct number.
+    #----Next we assign atoms of B as ghosts to mol, so that they don't contribute any nuclear charges.
+    #----These are assigned the auciliary basis of B for which we already have the fitting coeffs.
+    #----Finally we just perform the integral of the 0 exponent BF with all the auxiliary BFs
+    mol = gto.Mole()
+    mol.atom = '''Ghost 0 0 0; '''
+    mol.basis = {'Ghost': gto.basis.parse('''
+    Ghost    S
+         0.0              1.0
+    ''')}
+    mol.atom = mol.atom + molA.atom + ' ;'
+    for i in range(molB.natm):
+        coordBohr = molB._atom[i][1]
+        coordAngs = [x*0.52917721092 for x in coordBohr]
+        mol.atom = mol.atom + ' Ghost'+str(i)+' '+ str(coordAngs)[1:-1]+' ; '
+         
+    for i in range(molA.natm):
+        mol.basis[molA._atom[i][0]] = basisSetA
+    for i in range(molB.natm):
+        atomName = molB._atom[i][0]
+        if isSupermolecular:
+            #Strip the 'ghost-' prefix before the atom names 
+            if 'GHOST-' in atomName:
+                atomName = atomName.replace('GHOST-','')
         
+        #mol.basis['Ghost'+str(i)] = gto.basis.load('weigend', molB._atom[i][0])
+        #mol.basis['Ghost'+str(i)] = gto.uncontract(gto.basis.load('weigend', atomName))
+        mol.basis['Ghost'+str(i)] = gto.basis.load('weigend', atomName)
+    #print(mol._basis)
+    #print(mol._bas)
+    #print(mol.atom)    
+    #print(mol.basis)
+
+    #In case the number of electrons in molB is not even, 
+    #doing mol.build() gives an error about spin not being 0 and blah blah..
+    #Although, we aren't doing spin unrestricted calculations
+    # at the moment, here we should check if the nelectrons is even
+    # or not and accordingly set the spin of the mol before building it.
+    # Since, this mol object is just an auxiliary object to enable the  
+    # calculation of nucAauxB energy, so doing changes to spin won't affect the result.
+    mol.charge = molB.charge
+    #if(molB.nelectrons%2!=0):
+    #mol.spin=1
+    
+    mol.build()
+    #mol._libcint_ctr_coeff(0)[:] = 3.544925214180127
+    mol._libcint_ctr_coeff(0)[:] = 3.544907701810305
+    #for i in range(mol.nbas):
+    #    print(mol._libcint_ctr_coeff(i))
+
+    #print(mol._basis)
+    #print(mol._bas)
+
+    #----Finally we just perform the integral of the 0 exponent BF with all the auxiliary BFs
+    V_nucA_auxB_mat = mol.intor('int1e_nuc', shls_slice=(0,1,molA.nbas+1,mol.nbas))#[0,molA.nao_nr()+1:mol.nao_nr()+1]
+    #print(V_nucA_auxB_mat.shape)
+    #print(df_coeff.shape)
+    #print(mol.natm)
+    #print(mol._atom)
+    #print(mol.ao_labels())
+
+    
+    #for i in range(mol.natm):
+    #    print(mol.atom_charge(i))
+    
+    energy = np.einsum('i,ji',df_coeff,V_nucA_auxB_mat)
+    #energy = np.dot(df_coeff,V_nucA_auxB_mat)
+    #print(mol.intor('int1e_nuc')[0:5,0:5])
+    
+    return energy
+
+def coulombMatrixEmbDF(molTotal, molA, molB, dmatB):
+    auxmolB = df.addons.make_auxmol(molB, auxbasis='weigend')
+    # ints_3c is the 3-center integral tensor (ij|P), where i and j are the
+    # indices of AO basis and P is the auxiliary basis
+    ints_3c2e_BB = df.incore.aux_e2(molB, auxmolB, intor='int3c2e')
+    ints_2c2e_BB = auxmolB.intor('int2c2e')
+    
+    nao = molB.nao
+    naux = auxmolB.nao
+
+    # Compute the DF coefficients (df_coef)
+    df_coef = scipy.linalg.solve(ints_2c2e_BB, ints_3c2e_BB.reshape(nao*nao, naux).T)
+    df_coef = df_coef.reshape(naux, nao, nao)
+
+    ints_3c2e_AB = df.incore.aux_e2(molA, auxmolB, intor='int3c2e')
+    df_coeff = np.einsum('ijk,jk', df_coef, dmatB)
+    Jab2 = np.einsum('ijk,k',ints_3c2e_AB,df_coeff)
+    
+    return Jab2
+
+def coulombMatrixEmb(molTotal, molA, molB, dmatB):
+    #Two electron integrals for A+B total system
+    TwoE = molTotal.intor('int2e', shls_slice=(0,molA.nbas,0,molA.nbas,molA.nbas,molA.nbas+molB.nbas,molA.nbas,molA.nbas+molB.nbas))
+    #Construct the Coulomb matrix of A due to B
+    Jab = np.einsum('ijkl,lk',TwoE,dmatB)
+    return Jab
+
+def coulombMatrixEmbSuper(molTotal, mfTotal, dmatB):
+    Jab, temp = scf.hf.get_jk(molTotal, dmatB, hermi=1, vhfopt=None, with_j=True, with_k=False, omega=None)
+    return Jab
+
+def calculateEnergy(dmat, mat):
+    energy = np.einsum('pq,qp',dmat,mat)
+    return energy
+
+def calculateSemiDFCoeff(mol):
+    # Define the auxiliary fitting basis for 3-center integrals. Use the function
+    # make_auxmol to construct the auxiliary Mole object (auxmol) which will be
+    # used to generate integrals.
+    auxbasis = 'weigend'
+    auxmol = df.addons.make_auxmol(mol, auxbasis)
+    # ints_3c is the 3-center integral tensor (ij|P), where i and j are the
+    # indices of AO basis and P is the auxiliary basis
+    ints_3c2e = df.incore.aux_e2(mol, auxmol, intor='int3c2e')
+    ints_2c2e = auxmol.intor('int2c2e')
+
+    nao = mol.nao
+    naux = auxmol.nao
+
+    # Compute the DF coefficients (df_coef) and the DF 2-electron (df_eri)
+    df_coef = scipy.linalg.solve(ints_2c2e, ints_3c2e.reshape(nao*nao, naux).T)
+    df_coef = df_coef.reshape(naux, nao, nao)    
+    return df_coef, ints_3c2e
+
+def energy_nuc(molA, molB):
+    '''Compute nuclear repulsion energy (AU) or static Coulomb energy
+    Returns
+        float
+    '''
+    chargesA = molA.atom_charges()
+    chargesB = molB.atom_charges()
+    coordsA = molA.atom_coords()
+    coordsB = molB.atom_coords()
+    e = 0
+    for j in range(len(molB._atm)):
+        q2 = chargesB[j]
+        r2 = coordsB[j]
+        for i in range(molA.natm):
+            q1 = chargesA[i]
+            r1 = coordsA[i]
+            r = np.linalg.norm(r1-r2)
+            if q1!=0 and q2!=0:
+                e += q1 * q2 / r
+    return e
+
+def coulombMatrixDF(mol, dmat, df_coef=None, ints_3c2e=None):
+    if (df_coef is None):
+        # Define the auxiliary fitting basis for 3-center integrals. Use the function
+        # make_auxmol to construct the auxiliary Mole object (auxmol) which will be
+        # used to generate integrals.
+        auxbasis = 'weigend'
+        auxmol = df.addons.make_auxmol(mol, auxbasis)
+        # ints_3c is the 3-center integral tensor (ij|P), where i and j are the
+        # indices of AO basis and P is the auxiliary basis
+        if (ints_3c2e is None):
+            ints_3c2e = df.incore.aux_e2(mol, auxmol, intor='int3c2e')
+        ints_2c2e = auxmol.intor('int2c2e')
+
+        nao = mol.nao
+        naux = auxmol.nao
+
+        # Compute the DF coefficients (df_coef) and the DF 2-electron (df_eri)
+        df_coef = scipy.linalg.solve(ints_2c2e, ints_3c2e.reshape(nao*nao, naux).T)
+        df_coef = df_coef.reshape(naux, nao, nao)
+
+    
+
+    df_coeff = np.einsum('ijk,jk', df_coef, dmat)
+    Jaa = np.einsum('ijk,k',ints_3c2e,df_coeff)
+    #df_eri = lib.einsum('ijP,Pkl->ijkl', ints_3c2e, df_coef)
+    #TwoE = df_eri
+    #Jaa = np.einsum('ijkl,kl',TwoE, dmat)
+    return Jaa
+
+def nucDensB(molA, molB, molTotal, dmatB):
+    global isSupermolecularBasis
+    if isSupermolecularBasis:
+        Vnuctot_Mat = molTotal.intor('int1e_nuc')
+    else:
+        Vnuctot_Mat = molTotal.intor('int1e_nuc')[molA.nao_nr():, molA.nao_nr():]
+    VnucB_mat = molB.intor('int1e_nuc')
+    V_eff = Vnuctot_Mat-VnucB_mat
+    energy = np.einsum('pq,qp',dmatB,V_eff)
+    return energy
+
+def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cycle, max_memory, dmA=None):
+    global kedf #KE functional str
+    global embPot
+    global isXCchange
+    global isFrozen
+    global isNucAdensB, isNucAauxB
+    
+    #INPUT:
+    #Jab: Electron(A)-Electron(B) Coulomb Matrix due to B in basis of A
+    #Vab: Electron(A)-Nuclear(B) Coulomb Matrix due to B in basis of A
+    #dmatB: Density Matrix of B
+    #excB:  Exchange-Correlation Energy of B (Needed to subtract from the total Exc of A+B )
+    #mfA: RKS object of Mol A (Cluster)
+    #mfTotal: RKS object of total System
+    #---------------------------------------------------------
+    #LOCAL:
+    #scf_conv:    is SCF is converged
+    #S_AA :       Overlap matrix of A in basis of A
+    #---------------------------------------------------------
+    scf_conv = False
+    ni = mfTotal._numint
+    
+    
+    ekeF_B = 0.0
+    if not(kedf=='electro'):
+        #KE Func Potential for density of B
+        # 'ekeF_B' is needed to calculate the correct energy of A
+        n_B, ekeF_B, KEF_B = ni.nr_rks(molB, mfB.grids, '521', dmatB)
+    #Overlap Matrix of A in basis of A
+    S_AA = mfA.get_ovlp(molA)
+    #KE + Vnuc matrix of A in basis of A
+    H_core_A = mfA.get_hcore(molA)
+    #Embedding Potential Matrix (Coulombic)
+    EmbdmatPot = Vab + Jab  
+    #Debugging
+    #EmbdmatPot = EmbdmatPot-EmbdmatPot
+    #Initial Density Matrix
+    if dmA is not None:
+        dmatNew = dmA
+    else:
+        dmatNew = mfA.get_init_guess(molA, 'minao')
+       
+
+    if(isDF):
+        temp = calculateSemiDFCoeff(molA)
+        df_coef = temp[0]
+        int3c2e = temp[1]
+    else:
+        #TwoEA = molA.intor('int2e')
+        J_AA, temp = scf.hf.get_jk(molA, dmatNew, hermi=1, vhfopt=None, with_j=True, with_k=False, omega=None)
+        
+    
+    #Debugging
+    #dmatNew = dmA
+    e_tot_old = 0.0
+    #Non-additive KE
+    ekeF_A = 0.0
+    ekeF_AandB = 0.0
+    nadd_eKE = 0.0
+    nAdd_KE_Pot = 0
+    cycle = 1
+    mfA.diis = scf.CDIIS()
+    
+    if isinstance(mfA.diis, lib.diis.DIIS):
+        diis = mfA.diis
 
     #enabling range-separated hybrids
-    omega, alpha, hyb = ni.rsh_and_hybrid_coeff(ks.xc, spin=mol.spin)
+    omega, alpha, hyb = ni.rsh_and_hybrid_coeff(mfTotal.xc, spin=molA.spin)
+    #Fock exchange
+    VK = 0
+    #Exchange energy
+    eK = 0.0
+    #Debug
+    #isXCchange=True
+    #xcName = 'PBE'
+        
 
-    if abs(hyb) < 1e-10 and abs(alpha) < 1e-10:
-        vk = None
-        if (ks._eri is None and ks.direct_scf and
-            getattr(vhf_last, 'vj', None) is not None):
-            ddm = np.asarray(dm) - np.asarray(dm_last)
-            vj = ks.get_j(mol, ddm, hermi)
-            vj += vhf_last.vj
+    while not scf_conv and cycle <= max(1, max_cycle):
+        if not(cycle==1):
+            if not(isDF):
+                #Jdiff = np.einsum('ijkl,lk',TwoEA, dmatNew-dmatA)
+                Jdiff, temp = scf.hf.get_jk(molA, dmatNew-dmatA, hermi=1, vhfopt=None, with_j=True, with_k=False, omega=None)
+        dmatA = dmatNew
+
+        #Electron-Electron Coulomb Matrix of A in basis of A
+        if(isDF):
+            J_AA = coulombMatrixDF(molA, dmatA, df_coef, int3c2e)
         else:
-            vj = ks.get_j(mol, dm, hermi)
-        vxc += vj
-    else:
-        if (ks._eri is None and ks.direct_scf and
-            getattr(vhf_last, 'vk', None) is not None):
-            ddm = np.asarray(dm) - np.asarray(dm_last)
-            vj, vk = ks.get_jk(mol, ddm, hermi)
-            vk *= hyb
-            if abs(omega) > 1e-10:  # For range separated Coulomb operator
-                vklr = ks.get_k(mol, ddm, hermi, omega=omega)
-                vklr *= (alpha - hyb)
-                vk += vklr
-            vj += vhf_last.vj
-            vk += vhf_last.vk
+            if (cycle ==1):
+                J_AA = J_AA
+                
+            else:
+                J_AA = J_AA + Jdiff
+        #The XC embedding potential requires the density of A as well,
+        #therefore, needs to be updated at each scf iteration
+        
+        #Construct the total density matrix by having dmatA and dmatB as diagonal blocks of dmatTotal
+        if isSupermolecularBasis:
+            dmatTotal = dmatA + dmatB
         else:
-            vj, vk = ks.get_jk(mol, dm, hermi)
-            vk *= hyb
-            if abs(omega) > 1e-10:
-                vklr = ks.get_k(mol, dm, hermi, omega=omega)
-                vklr *= (alpha - hyb)
-                vk += vklr
-        vxc += vj - vk * .5
+            dmatTotal = scipy.linalg.block_diag(dmatA, dmatB)
+            #print(dmatTotal)
+        #-----------------------------------
+        #Fock exchange
+        #-----------------------------------
+        if hyb>1e-10:
+            temp, VK = scf.hf.get_jk(molA, dmatA, hermi=1, vhfopt=None, with_j=False, with_k=True, omega=None)
+            #print(VK.shape)
+            #print(hyb)
+            #print(alpha)
+            VK *= hyb
+            VK = -VK * .5
+            eK = np.einsum('ij,ji', dmatA, VK).real * .5 
+        #---------------XC STUFF-----------------------------------
+        #Calculate EXC(A+B) and XC_Mat(A+B) and nElec(A+B)
+        #Original:
+        n_AandB1, exc_AandB, XC_AandB = ni.nr_rks(molTotal, mfTotal.grids, mfTotal.xc, dmatTotal, max_memory=max_memory)
+        
+        #But we only need the matrix elements that belong to the basis functions of A
+        XC_AandB_basA = XC_AandB[0:molA.nao_nr(),0:molA.nao_nr()] 
+        exc_A1 = 0
+        #The following is not exactly nadd energy as exc_A1 is not yet calculated and needs to be subtracted too. 
+        #For now we just subtract excB from it and exc_A1=0 so that we don't have to change a lot of equations where energy is being calculated.
+        #Also, exc_A1 is not yet calculated as it is not needed if the same XCF is being used for both cluster and embedding potential.
+        #exc_A1 gets cancelled out in the FDE equation for energy of cluster, so it saves time.
+        nadd_eXC = exc_AandB - excB - exc_A1
 
-        if ground_state:
-            exc -= np.einsum('ij,ji', dm, vk).real * .5 * .5
+        #----------------------------------------------------------
 
-    if ground_state:
-        ecoul = np.einsum('ij,ji', dm, vj).real * .5
-    else:
-        ecoul = None
+        #---------------KE FUNC STUFF-----------------------------------
+        if not(kedf=='electro'):
+            #KE Func Potential for total density
+            #Original:
+            n_AandB2, ekeF_AandB, KEF_AandB = ni.nr_rks(molTotal, mfTotal.grids, kedf, dmatTotal, max_memory=max_memory)
+            #Efficient:
+            #n_AandB2, ekeF_AandB, KEF_AandB = ni.nr_rks2(molTotal, mfTotal.grids, KEfunc, dmatTotal, molA, max_memory=max_memory)
+            #But we only need the matrix elements that belong to the basis functions of A
+            KEF_AandB_basA = KEF_AandB[0:molA.nao_nr(),0:molA.nao_nr()]
+            #KE Func Potential for density of A
+            n_A, ekeF_A, KEF_A = ni.nr_rks(molA, mfA.grids, kedf, dmatA, max_memory=max_memory)
+            #Non additive KE potential
+            nAdd_KE_Pot = KEF_AandB_basA - KEF_A
+            #Non additive KE
+            nadd_eKE = ekeF_AandB - ekeF_A - ekeF_B
+        #---------------------------------------------------------------
 
-    # Add the non-additive kinetic potential
-    nadd_vk = v_kedf_tot - v_kedf_A
-    vxc += nadd_vk
-    vxc = lib.tag_array(vxc, ecoul=ecoul, exc=exc_A, e_kedf_tot = e_kedf_tot, e_kedf_A = e_kedf_A, exc_tot = exc, vj=vj, vk=vk, nadd_vk=nadd_vk)
-    return vxc
+        #Debug
+        #n_AandB, exc_AandB, XC_AandB = ni.nr_rks(molA, mfA.grids, mfA.xc, dmatA, max_memory=max_memory)
+        #XC_AandB_basA = XC_AandB
+        #print(exc_AandB)
+        #----------------------------------------------------------------
+        #Construct Fock (KSCED) Matrix
+        #----------------------------------------------------------------
+        if not(kedf=='electro'): #If non-additive KE is needed
+            Fo = H_core_A + EmbdmatPot + J_AA + XC_AandB_basA + nAdd_KE_Pot + VK
+        else: #If electrostatic embedding is requested
+            Fo = H_core_A + EmbdmatPot + J_AA + XC_AandB_basA + VK
+        
+        diis_start_cycle = mfA.diis_start_cycle
+        if cycle >= diis_start_cycle:
+            F = diis.update(S_AA, dmatA, Fo)
+        #Solve the Fock matrix eigenvalue equation
+        mo_energy, mo_coeff = mfA.eig(F, S_AA)
+        #mo_energy, mo_coeff = eig(F, S_AA)
 
-def get_hcore(molA, molB, dmB):
-    '''nuc_A + nuc_B + t_A + vj_B 
-    '''
-    h = molA.intor_symmetric('int1e_kin')
+            
 
-    h+= molA.intor_symmetric('int1e_nuc')
-
-    #Calcuate nuclear matrix due to the whole system in the basis of A
-    v_nuc_Tot = molTot.intor('int1e_nuc')[0:molA.nao_nr(), 0:molA.nao_nr()]
-    #Nuclear matrix of A due to B
-    v_nuc_B = v_nuc_Tot - molA.intor('int1e_nuc')
-    # Coulomb potential matrix due to electrons of B
-    if isSupermolecularBasis:
-        vj_B = mfA.get_j(dmB)
-    else:
-        if isDF:
-            auxmolB = df.addons.make_auxmol(molB, auxbasis='weigend')
-            ints_3c2e_BB = df.incore.aux_e2(molB, auxmolB, intor='int3c2e')
-            ints_2c2e_BB = auxmolB.intor('int2c2e')
-            nao = molB.nao
-            naux = auxmolB.nao
-            # Compute the DF coefficients (df_coef)
-            df_coef = scipy.linalg.solve(ints_2c2e_BB, ints_3c2e_BB.reshape(nao*nao, naux).T)
-            df_coef = df_coef.reshape(naux, nao, nao)
-            ints_3c2e_AB = df.incore.aux_e2(molA, auxmolB, intor='int3c2e')
-            df_coeff = np.einsum('ijk,jk', df_coef, dmB)
-            vj_B = np.einsum('ijk,k',ints_3c2e_AB,df_coeff)
+        #Get occupations
+        mo_occ = mfA.get_occ(mo_energy, mo_coeff)
+        #print(mo_occ)
+        #Construct the new density matrix
+        dmatNew = mfA.make_rdm1(mo_coeff, mo_occ)
+        #----------------------------------------------------------------
+        #saveDensityCube(molTotal, dmatTotal, cycle)
+        #Total Energy
+        #----------------------------------------------------------------
+        e_tot_New = calculateEnergy(dmatA, J_AA)*0.5 + calculateEnergy(dmatA, H_core_A+EmbdmatPot) + exc_A1 + nadd_eXC + nadd_eKE + eK
+        print(e_tot_New)
+        #----------------------------------------------------------------
+        if abs(e_tot_New-e_tot_old)<=0.00000000001:
+            scf_conv = True
         else:
-            TwoE = molTot.intor('int2e', shls_slice=(0,molA.nbas,0,molA.nbas,molA.nbas,molA.nbas+molB.nbas,molA.nbas,molA.nbas+molB.nbas))
-            vj_B = np.einsum('ijkl,lk', TwoE, dmB)
-    h = h + v_nuc_B + vj_B
+            e_tot_old = e_tot_New
+            cycle = cycle + 1        
+
+    #After SCF, perform an extra diagonalization in case of level-shifting to remove it
+    mo_energy, mo_coeff = mfA.eig(Fo, S_AA) #Use original Fock matrix Fo
+    mo_occ = mfA.get_occ(mo_energy, mo_coeff)
+    dmatNew = mfA.make_rdm1(mo_coeff, mo_occ)
+    #Total energy = Electron-Electron Coulomb Energy + KE + Nuc-Ele. Energy(only A) + Coulomb Embedding Energy(Vab + Jab) 
+    #               +  Exc(A+B)  + NaddKE((A+B_-A)
+    #Debugging
+    #dmatNew = dmatA
+    e_tot_Final = calculateEnergy(dmatNew, J_AA)*0.5 + calculateEnergy(dmatNew, H_core_A+EmbdmatPot) + exc_A1 + nadd_eXC + nadd_eKE + eK
+    print('SCF converged')
+    print('Add the static energies due to the environment:')
+    if(isDF):
+        #print(e_tot_Final + mfA.energy_nuc() + energy_nuc(molA, molB)  + nucAux(molA, molB, molTotal, dmatB) - excB) 
+        e_tot_Final = e_tot_Final + mfA.energy_nuc() + energy_nuc(molA, molB)  
+    else:
+        #print(e_tot_Final + mfA.energy_nuc() + energy_nuc(molA, molB)  + nucDensB(molA, molB, molTotal, dmatB) - excB)
+        e_tot_Final = e_tot_Final + mfA.energy_nuc() + energy_nuc(molA, molB)  
+    
+    if isDF:
+        if isNucAdensB:
+            e_tot_Final = e_tot_Final + nucDensB(molA, molB, molTotal, dmatB) 
+        else:
+            e_tot_Final = e_tot_Final + nucAux(molA, molB, molTotal, dmatB)[0] 
+    else:
+         e_tot_Final = e_tot_Final + nucDensB(molA, molB, molTotal, dmatB)
+
+    #Debug
+    #if isDF:
+        #print(calculateEnergy(dmatNew, Vab))
+        #print(nucAux(molB, molA, molTotal, dmatNew)[0])
+        #e_tot_Final = e_tot_Final - calculateEnergy(dmatNew, Vab) + nucAux(molB, molA, molTotal, dmatNew)[0]
+        #e_tot_Final = e_tot_Final - calculateEnergy(dmatNew, molA.intor('int1e_nuc')) + nucAauxA(molA, dmatNew)[0] 
+        #print(calculateEnergy(dmatNew, Vab) - nucAux(molB, molA, molTotal, dmatNew)[0])
+        #print(calculateEnergy(dmatNew, molA.intor('int1e_nuc')) - nucAauxA(molA, dmatNew)[0])
+    print('----------------------------------')
+    print('|Converged Energy: ',e_tot_Final) 
+    print('----------------------------------')
+    
+    
+    
+    #Debug
+    #print(abs(dmatNew - dmA).max())
+    print('Cycles:=\t                                   '+str(cycle))
+    print('KE cluster=\t                                '+str(calculateEnergy(dmatNew, molA.intor('int1e_kin'))))
+    #print('Enuc cluster ',calculateEnergy(dmatNew, molA.intor('int1e_nuc')))
+    #print('Enuc total ',calculateEnergy(dmatNew, molTotal.intor('int1e_nuc')))
+    #print('Enuc total - Enuc cluster ',calculateEnergy(dmatNew, molTotal.intor('int1e_nuc')))
+    print('Enuc-nuc total=\t                            '+str(mfTotal.energy_nuc()))
+    print('Enuc-nuc cluster=\t                          '+str(mfA.energy_nuc()))
+    print('Enuc-nuc total - Enuc-nuc cluster=\t         '+str(energy_nuc(molA, molB)))
+    print('XC_Energy env=\t                             '+str(excB))
+    print('XC_Energy Total=\t                           '+str(exc_AandB))
+    print('KEDF_Energy env=\t                           '+str(ekeF_B))
+    print('KEDF_Energy clus=\t                          '+str(ekeF_A))
+    print('KEDF_Energy Total=\t                         '+str(ekeF_AandB))
+    print('KEDF_Energy nadd=\t                          '+str(nadd_eKE))
+    print('Electrostatic Embedding_Energy Total=\t      '+str(calculateEnergy(dmatNew, EmbdmatPot)))
+    if isDF:
+        if isNucAdensB:
+            print('nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)))
+            #Debug
+            #print('(Debug)nucAauxB energy=\t                          '+str(nucAux(molA, molB, molTotal, dmatB)[0]))
+            #print('(Debug)nucAauxB energy=\t                          '+str(nucAux2(molA, molB, molTotal, dmatBprime)[0]))
+        else:
+            print('nucAauxB energy=\t                          '+str(nucAux(molA, molB, molTotal, dmatB)[0]))
+            #Debug
+            print('(Debug)nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)))
+    else:
+        print('nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)))
+    print('Couenrgy: Enuc+ J clu=\t                     '+str(calculateEnergy(dmatNew, J_AA)*0.5+calculateEnergy(dmatNew, molA.intor('int1e_nuc'))))
+    print('Exchange energy=\t                            '+str(eK))
+
+    #print('Embedding Potential')
+    # for i in range(molA.nao_nr()):
+    #     for j in range(i+1):
+    #         print(EmbdmatPot[i,j])
+    # for i in range(molB.nao_nr()):
+    #     for j in range(i+1):
+    #         print(dmatB[i,j])
+
+    # dump_scf(molA, 'fde.chk', e_tot_Final, mo_energy, mo_coeff, mo_occ, overwrite_mol=True)
+    
+    #XC Func Potential for density of A
+    #This is needed if the same XCF is used for the cluster and embedding potential
+    #As in this case we skip its calculation during the SCF stage. 
+    #But it is still needed to get the correct embedding potential.
+    n_A, eXC_A, XC_A2 = ni.nr_rks(molA, mfA.grids, mfA.xc, dmatNew, max_memory=max_memory)
+    print('XC_Energy Cluster                            '+str(eXC_A))   #XC energy of A using xcName (env)
+        
+    print('XC_Energy nadd                            '+str(exc_AandB - eXC_A - excB))
+
+    #Construct the Embedding potential
+    embPot = EmbdmatPot + nAdd_KE_Pot + XC_AandB_basA - XC_A2
+    
+    if isDF:
+        if isNucAdensB:
+            E_int = exc_AandB - eXC_A - excB + nadd_eKE + calculateEnergy(dmatNew, EmbdmatPot) + energy_nuc(molA, molB) + nucDensB(molA, molB, molTotal, dmatB)
+        else:
+            E_int = exc_AandB - eXC_A - excB + nadd_eKE + calculateEnergy(dmatNew, EmbdmatPot) + energy_nuc(molA, molB) + nucAux(molA, molB, molTotal, dmatB)[0]
+    else:
+        E_int = exc_AandB - eXC_A - excB + nadd_eKE + calculateEnergy(dmatNew, EmbdmatPot) + energy_nuc(molA, molB) + nucDensB(molA, molB, molTotal, dmatB)
+    print('Embedding energy from DFT embeddding potential and DFT cluster density', E_int)
+
+    return e_tot_Final, E_int, dmatNew
 
 
-    return h
 
 if os.path.exists('viz.html'):
     os.remove('viz.html')
@@ -439,8 +786,10 @@ if show_subsystem_information:
 st.write('#### Set other calculation parameters')
 xc = st.selectbox('Select an exchange-correlation functional',
      ( 'PBE', 'BLYP', 'BP86', 'PW91', 'SVWN','REVPBE'))
-kedf = st.selectbox('Select a kinetic energy density functional',
-     ( 'GGA_K_LC94', 'LDA_K_TF', 'GGA_K_APBE', 'GGA_K_REVAPBE','GGA_K_TW2'))
+kedf_select = st.selectbox('Select a kinetic energy density functional',
+     ( 'GGA_K_LC94', 'LDA_K_TF', 'GGA_K_APBE', 'GGA_K_REVAPBE','GGA_K_TW2', 'electro'))
+dict_kedf = {'GGA_K_LC94':'521','LDA_K_TF':'50', 'electro':'electro'}
+kedf = dict_kedf[kedf_select]
 isDF =  st.checkbox('Use density fitting (Resolution of Identity)')
 isSupermolecularBasis =  st.checkbox('Use a supermolecular basis for the subsystems')
 
@@ -449,6 +798,16 @@ if col2.button('Run FDE calculation'):
     if molTot.nao>=50:
         st.error('The no. of basis functions of the total system is '+str(molTot.nao)+' which is too much for a free online tool. Please use a smaller basis set or choose a smaller system.', icon="🚨")
         st.stop()
+
+    with st.spinner('Running a DFT calculation on the total system for reference...'):
+        mfTot = dft.RKS(molTot)
+        mfTot.xc = xc
+        energyTot = mfTot.kernel()
+        if mfTot.converged:
+            st.success('Reference DFT energy of the total system =   '+ str(energyTot), icon = '✅')
+        else:
+            st.error('DFT calculation for the total system did not converge.', icon = '🚨')
+            st.stop()
     
     with st.spinner('Running a DFT calculation on the environment (subsystem B)...'):
         if isDF:
@@ -463,24 +822,29 @@ if col2.button('Run FDE calculation'):
             st.error('DFT calculation for the environment (subsystem B) did not converge.', icon = '🚨')
             st.stop()
     
-    with st.spinner('Running an FDE calculation on the active subsystem (subsystem A)...'):
-        dmB = mfB.make_rdm1()
-        # mfB.initialize_grids(molB, dmB)
-        # scf.RKS.get_veff = get_veff
-        # scf.RKS.energy_elec = energy_elec
-        # scf.hf.energy_tot = energy_tot
+    with st.spinner('Running an FDE calculation on the active subsystem (subsystem A) using the frozen density of isolated B...'):
+        dmB = mfB.make_rdm1(mfB.mo_coeff, mfB.mo_occ)
+        excB = mfB.scf_summary['exc']
+        
         if isDF:
             mfA = dft.RKS(molA).density_fit(auxbasis='weigend')
         else:
             mfA = dft.RKS(molA)
         mfA.xc = xc
-        ks = mfA
-        mfA.get_veff = get_veff
-        mfA.energy_tot = energy_tot
-        mfA.energy_elec = energy_elec
-        H_core = get_hcore(molA, molB, dmB=dmB)
-        mfA.get_hcore = lambda *args: H_core
-        energyA_FDE = mfA.kernel()
+        #calculate the Coulomb matrix of A due to B
+        if (isDF):
+            Jab = coulombMatrixEmbDF(molTot, molA, molB, dmB)
+        else:
+            if isSupermolecularBasis:
+                Jab = coulombMatrixEmbSuper(molTot, mfTot, dmB)
+            else:    
+                Jab = coulombMatrixEmb(molTot, molA, molB, dmB)
+        #Calcuate nuclear matrix due to the whole system in the basis of A
+        Vnuctot = molTot.intor('int1e_nuc')[0:molA.nao_nr(), 0:molA.nao_nr()]
+        #Nuclear matrix of A due to B
+        Vab = Vnuctot - molA.intor('int1e_nuc') 
+        
+        energyA_FDE, E_intAB, dmA_fde = scf1(molB, molA, mfA, mfB, molTot, mfTot, dmB, excB, Jab, Vab, 40, 2000)
         if mfA.converged:
             st.success('FDE energy of the active subsystem (subsystem A) =   '+ str(energyA_FDE), icon = '✅')
         else:
@@ -495,17 +859,7 @@ if col2.button('Run FDE calculation'):
     st.write('XC energy of A =  '+str())
     st.write('The energy of the total system is calculated as')
     st.latex('E_\mathrm{Tot} = E_\mathrm{A}+E_\mathrm{B}+E_\mathrm{int}')
-    dft.rks.get_veff = get_veff_original 
-    dft.rks.energy_elec = energy_elec_original
-    scf.hf.energy_tot = energy_tot_original
-    with st.spinner('Running a DFT calculation on the total system...'):
-        mfTot = dft.RKS(molTot)
-        mfTot.xc = xc
-        energyTot = mfTot.kernel()
-        if mfTot.converged:
-            st.success('Reference DFT energy of the total system =   '+ str(energyTot), icon = '✅')
-        else:
-            st.error('DFT calculation for the total system did not converge.', icon = '🚨')
-            st.stop()
+    
+    
 
     st.write('Error (E_DFT - E_FDE) = '+str(energyTot-energyTot_FDE))
