@@ -258,7 +258,7 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
     if not(kedf=='electro'):
         #KE Func Potential for density of B
         # 'ekeF_B' is needed to calculate the correct energy of A
-        n_B, ekeF_B, KEF_B = ni.nr_rks(molB, mfB.grids, '521', dmatB)
+        n_B, ekeF_B, KEF_B = ni.nr_rks(molB, mfB.grids, kedf, dmatB)
     #Overlap Matrix of A in basis of A
     S_AA = mfA.get_ovlp(molA)
     #KE + Vnuc matrix of A in basis of A
@@ -408,7 +408,7 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
         #Total Energy
         #----------------------------------------------------------------
         e_tot_New = calculateEnergy(dmatA, J_AA)*0.5 + calculateEnergy(dmatA, H_core_A+EmbdmatPot) + exc_A1 + nadd_eXC + nadd_eKE + eK
-        print(e_tot_New)
+        print(e_tot_New, flush=True)
         #----------------------------------------------------------------
         if abs(e_tot_New-e_tot_old)<=0.00000000001:
             scf_conv = True
@@ -426,8 +426,8 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
     #Debugging
     #dmatNew = dmatA
     e_tot_Final = calculateEnergy(dmatNew, J_AA)*0.5 + calculateEnergy(dmatNew, H_core_A+EmbdmatPot) + exc_A1 + nadd_eXC + nadd_eKE + eK
-    print('SCF converged')
-    print('Add the static energies due to the environment:')
+    print('SCF converged', flush=True)
+    print('Add the static energies due to the environment:', flush=True)
     if(isDF):
         #print(e_tot_Final + mfA.energy_nuc() + energy_nuc(molA, molB)  + nucAux(molA, molB, molTotal, dmatB) - excB) 
         e_tot_Final = e_tot_Final + mfA.energy_nuc() + energy_nuc(molA, molB)  
@@ -452,42 +452,42 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
         #print(calculateEnergy(dmatNew, Vab) - nucAux(molB, molA, molTotal, dmatNew)[0])
         #print(calculateEnergy(dmatNew, molA.intor('int1e_nuc')) - nucAauxA(molA, dmatNew)[0])
     print('----------------------------------')
-    print('|Converged Energy: ',e_tot_Final) 
+    print('|Converged Energy: ',e_tot_Final, flush=True) 
     print('----------------------------------')
     
     
     
     #Debug
     #print(abs(dmatNew - dmA).max())
-    print('Cycles:=\t                                   '+str(cycle))
-    print('KE cluster=\t                                '+str(calculateEnergy(dmatNew, molA.intor('int1e_kin'))))
+    print('Cycles:=\t                                   '+str(cycle), flush=True)
+    print('KE cluster=\t                                '+str(calculateEnergy(dmatNew, molA.intor('int1e_kin'))), flush=True)
     #print('Enuc cluster ',calculateEnergy(dmatNew, molA.intor('int1e_nuc')))
     #print('Enuc total ',calculateEnergy(dmatNew, molTotal.intor('int1e_nuc')))
     #print('Enuc total - Enuc cluster ',calculateEnergy(dmatNew, molTotal.intor('int1e_nuc')))
-    print('Enuc-nuc total=\t                            '+str(mfTotal.energy_nuc()))
-    print('Enuc-nuc cluster=\t                          '+str(mfA.energy_nuc()))
-    print('Enuc-nuc total - Enuc-nuc cluster=\t         '+str(energy_nuc(molA, molB)))
-    print('XC_Energy env=\t                             '+str(excB))
-    print('XC_Energy Total=\t                           '+str(exc_AandB))
-    print('KEDF_Energy env=\t                           '+str(ekeF_B))
-    print('KEDF_Energy clus=\t                          '+str(ekeF_A))
-    print('KEDF_Energy Total=\t                         '+str(ekeF_AandB))
-    print('KEDF_Energy nadd=\t                          '+str(nadd_eKE))
-    print('Electrostatic Embedding_Energy Total=\t      '+str(calculateEnergy(dmatNew, EmbdmatPot)))
+    print('Enuc-nuc total=\t                            '+str(mfTotal.energy_nuc()), flush=True)
+    print('Enuc-nuc cluster=\t                          '+str(mfA.energy_nuc()), flush=True)
+    print('Enuc-nuc total - Enuc-nuc cluster=\t         '+str(energy_nuc(molA, molB)), flush=True)
+    print('XC_Energy env=\t                             '+str(excB), flush=True)
+    print('XC_Energy Total=\t                           '+str(exc_AandB), flush=True)
+    print('KEDF_Energy env=\t                           '+str(ekeF_B), flush=True)
+    print('KEDF_Energy clus=\t                          '+str(ekeF_A), flush=True)
+    print('KEDF_Energy Total=\t                         '+str(ekeF_AandB), flush=True)
+    print('KEDF_Energy nadd=\t                          '+str(nadd_eKE), flush=True)
+    print('Electrostatic Embedding_Energy Total=\t      '+str(calculateEnergy(dmatNew, EmbdmatPot)), flush=True)
     if isDF:
         if isNucAdensB:
-            print('nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)))
+            print('nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)), flush=True)
             #Debug
             #print('(Debug)nucAauxB energy=\t                          '+str(nucAux(molA, molB, molTotal, dmatB)[0]))
             #print('(Debug)nucAauxB energy=\t                          '+str(nucAux2(molA, molB, molTotal, dmatBprime)[0]))
         else:
-            print('nucAauxB energy=\t                          '+str(nucAux(molA, molB, molTotal, dmatB)[0]))
+            print('nucAauxB energy=\t                          '+str(nucAux(molA, molB, molTotal, dmatB)[0]), flush=True)
             #Debug
-            print('(Debug)nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)))
+            print('(Debug)nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)), flush=True)
     else:
-        print('nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)))
-    print('Couenrgy: Enuc+ J clu=\t                     '+str(calculateEnergy(dmatNew, J_AA)*0.5+calculateEnergy(dmatNew, molA.intor('int1e_nuc'))))
-    print('Exchange energy=\t                            '+str(eK))
+        print('nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)), flush=True)
+    print('Couenrgy: Enuc+ J clu=\t                     '+str(calculateEnergy(dmatNew, J_AA)*0.5+calculateEnergy(dmatNew, molA.intor('int1e_nuc'))), flush=True)
+    print('Exchange energy=\t                            '+str(eK), flush=True)
 
     #print('Embedding Potential')
     # for i in range(molA.nao_nr()):
@@ -504,9 +504,9 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
     #As in this case we skip its calculation during the SCF stage. 
     #But it is still needed to get the correct embedding potential.
     n_A, eXC_A, XC_A2 = ni.nr_rks(molA, mfA.grids, mfA.xc, dmatNew, max_memory=max_memory)
-    print('XC_Energy Cluster                            '+str(eXC_A))   #XC energy of A using xcName (env)
+    print('XC_Energy Cluster                            '+str(eXC_A), flush=True)   #XC energy of A using xcName (env)
         
-    print('XC_Energy nadd                            '+str(exc_AandB - eXC_A - excB))
+    print('XC_Energy nadd                            '+str(exc_AandB - eXC_A - excB), flush=True)
 
     #Construct the Embedding potential
     embPot = EmbdmatPot + nAdd_KE_Pot + XC_AandB_basA - XC_A2
@@ -518,7 +518,7 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
             E_int = exc_AandB - eXC_A - excB + nadd_eKE + calculateEnergy(dmatNew, EmbdmatPot) + energy_nuc(molA, molB) + nucAux(molA, molB, molTotal, dmatB)[0]
     else:
         E_int = exc_AandB - eXC_A - excB + nadd_eKE + calculateEnergy(dmatNew, EmbdmatPot) + energy_nuc(molA, molB) + nucDensB(molA, molB, molTotal, dmatB)
-    print('Embedding energy from DFT embeddding potential and DFT cluster density', E_int)
+    print('Embedding energy from DFT embeddding potential and DFT cluster density', E_int, flush=True)
 
     return e_tot_Final, E_int, dmatNew
 
