@@ -31,7 +31,7 @@ def dump_scf_summary(mf):
     st.write('DFT Exchange-Correlation Energy = ', summary['exc'])
 
 def nucAux(molA, molB, molTotal, dmatB):
-    global isSupermolecular, basisSetA
+    global isSupermolecularBasis, basisSetA
     #auxmolB = df.addons.make_auxmol(molB, auxbasis='unc-weigend')
     auxmolB = df.addons.make_auxmol(molB, auxbasis='weigend')
     #auxmolB.cart=True
@@ -76,7 +76,7 @@ def nucAux(molA, molB, molTotal, dmatB):
         mol.basis[molA._atom[i][0]] = basisSetA
     for i in range(molB.natm):
         atomName = molB._atom[i][0]
-        if isSupermolecular:
+        if isSupermolecularBasis:
             #Strip the 'ghost-' prefix before the atom names 
             if 'GHOST-' in atomName:
                 atomName = atomName.replace('GHOST-','')
@@ -736,7 +736,7 @@ HtmlFile.close()
 dict_name_to_partition_indx = {'HF dimer': 2,'H2O dimer': 3,'NH3 dimer': 4,'Benzene-Fulvene': 6,'Ethane': 4}
 st.write('#### Select the atoms that should be used as the subsystem A (active subsystem)')
 partition_indx = st.slider('The first n selected atoms would be used as the subsystem A and the remaining as the subsystem B (environment)', 0, molTot.natm, molTot.natm//2)
-
+isSupermolecularBasis =  st.checkbox('Use a supermolecular basis for the subsystems')
 
 # Set charge for the subsystems
 col1, col2 = st.columns(2)
@@ -748,7 +748,14 @@ chargeB = col2.number_input('Charge for Subsystem B', step=1)
 molA = gto.M()
 molA.unit='A'
 temp = input_geom_str.split("\n",2)[2]
-molA.atom = temp.split('\n')[0:partition_indx]
+if isSupermolecularBasis:
+    temp_list = temp.split('\n')
+    for i in range(partition_indx, len(temp_list)):
+        temp_list[i] = 'ghost-'+temp_list[i]
+    # st.write(temp_list)
+    molA.atom = temp_list
+else:
+    molA.atom = temp.split('\n')[0:partition_indx]
 molA.basis = basis_set_tot
 molA.charge = chargeA
 molA.build()
@@ -757,7 +764,14 @@ molA.build()
 molB = gto.M()
 molB.unit='A'
 temp = input_geom_str.split("\n",2)[2]
-molB.atom = temp.split('\n')[partition_indx:]
+if isSupermolecularBasis:
+    temp_list = temp.split('\n')
+    for i in range(0, partition_indx):
+        temp_list[i] = 'ghost-'+temp_list[i]
+    # st.write(temp_list)
+    molB.atom = temp_list
+else:
+    molB.atom = temp.split('\n')[partition_indx:]
 molB.basis = basis_set_tot
 molB.charge = chargeB
 molB.build()
@@ -807,7 +821,7 @@ kedf_select = st.selectbox('Select a kinetic energy density functional',
 dict_kedf = {'GGA_K_LC94':'521','LDA_K_TF':'50', 'electro':'electro', 'GGA_K_APBE':'185', 'GGA_K_REVAPBE':'55', 'GGA_K_TW2':'188'}
 kedf = dict_kedf[kedf_select]
 isDF =  st.checkbox('Use density fitting (Resolution of Identity)')
-isSupermolecularBasis =  st.checkbox('Use a supermolecular basis for the subsystems')
+
 # show_scf_summary =  st.checkbox('Show SCF Summary', key='scf_summary')
 
 col1, col2, col3 = st.columns([1,1,1])
