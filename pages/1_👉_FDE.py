@@ -17,6 +17,18 @@ isXCchange = False
 isNucAdensB = True
 isNucAauxB = False
 isFDEconverged = False
+conv_crit = 1e-7
+
+def dump_scf_summary(mf):
+    summary = mf.scf_summary
+    
+    st.text('**** SCF Summary ****')
+    st.write('Total Energy =                    ', mf.e_tot)
+    st.write('Nuclear Repulsion Energy =        ', summary['nuc'])
+    st.write('One-electron Energy =             ', summary['e1'])
+    # st.write('Two-electron Energy =             %24.15f', summary['e2'])
+    st.write('Two-electron Coulomb Energy =     ', summary['coul'])
+    st.write('DFT Exchange-Correlation Energy = ', summary['exc'])
 
 def nucAux(molA, molB, molTotal, dmatB):
     global isSupermolecular, basisSetA
@@ -237,6 +249,7 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
     global isFrozen
     global isNucAdensB, isNucAauxB
     global isFDEconverged
+    global conv_crit
     
     #INPUT:
     #Jab: Electron(A)-Electron(B) Coulomb Matrix due to B in basis of A
@@ -410,7 +423,7 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
         e_tot_New = calculateEnergy(dmatA, J_AA)*0.5 + calculateEnergy(dmatA, H_core_A+EmbdmatPot) + exc_A1 + nadd_eXC + nadd_eKE + eK
         print(e_tot_New, flush=True)
         #----------------------------------------------------------------
-        if abs(e_tot_New-e_tot_old)<=0.00000000001:
+        if abs(e_tot_New-e_tot_old)<=conv_crit:
             scf_conv = True
         else:
             e_tot_old = e_tot_New
@@ -537,7 +550,7 @@ menu_items={
 st.sidebar.write('# About')
 st.sidebar.write('### Made By [Manas Sharma](https://www.bragitoff.com/about/)')
 st.sidebar.write('### *Powered by*')
-st.sidebar.write('* [PySCF](https://pyscf.org/) for Quantum Chemistry Calculations')
+st.sidebar.write('* [PySCF](https://pyscf.org/) for Molecular Integrals and DFT Calculations')
 st.sidebar.write('* [Py3Dmol](https://3dmol.csb.pitt.edu/) for Chemical System Visualizations')
 st.sidebar.write('* [Streamlit](https://streamlit.io/) for making of the Web App')
 st.sidebar.write('## Brought to you by [CrysX](https://www.bragitoff.com/crysx/)')
@@ -549,7 +562,7 @@ st.sidebar.write('## Brought to you by [CrysX](https://www.bragitoff.com/crysx/)
 st.write('# CrysX-DEMO: Frozen Density Embedding (FDE)')
 st.write('This is an online demo of frozen density embedding (FDE). You can perform FDE calculations on the already available small test systems or use your own. NOTE: Calculations can only be performed for systems with less than 50 basis functions due to limited compute resources on the server where the web app is freely hosted.')
 st.write('FDE utilizes an embedding potential of the following form')
-st.latex(r'v_{\mathrm{emb}}\left[\rho^{\mathrm{act}}, \rho^{\mathrm{env}}, v_{\mathrm{nuc}}^{\mathrm{env}}\right](\boldsymbol{r})=v_{\mathrm{nuc}}^{\mathrm{env}}(\boldsymbol{r})+\int \frac{\rho^{\mathrm{env}}\left(\boldsymbol{r}^{\prime}\right)}{\left|\boldsymbol{r}-\boldsymbol{r}^{\prime}\right|} d \boldsymbol{r}^{\prime}+\frac{\delta E_{\mathrm{xc}}^{\mathrm{nadd}}\left[\rho^{\mathrm{act}}, \rho^{\mathrm{env}}\right]}{\delta \rho^{\mathrm{act}}(\boldsymbol{r})}+v_{T}\left[\rho^{\mathrm{act}}, \rho^{\mathrm{env}}\right](\boldsymbol{r})')
+st.latex(r'v_{\mathrm{emb}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}, v_{\mathrm{nuc}}^{\mathrm{B}}\right](\boldsymbol{r})=v_{\mathrm{nuc}}^{\mathrm{B}}(\boldsymbol{r}) + \int \frac{\rho^{\mathrm{B}}\left(\boldsymbol{r}^{\prime}\right)}{\left|\boldsymbol{r}-\boldsymbol{r}^{\prime}\right|} d \boldsymbol{r}^{\prime} + \frac{\delta E_{\mathrm{xc}}^{\mathrm{nadd}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right]}{\delta \rho^{\mathrm{A}}(\boldsymbol{r})} + \frac{\delta T_{\mathrm{s}}^{\mathrm{nadd}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right]}{\delta \rho^{\mathrm{A}}(\boldsymbol{r})}')
 # DATA for test systems
 hf_dimer_xyz = '''
 4
@@ -630,7 +643,7 @@ input_test_system = st.selectbox('Select a test system',
 
 selected_xyz_str = dict_name_to_xyz[input_test_system]
 
-st.write('#### Alternatively you can provide the XYZ file of your own structure here.')
+st.write('#### Alternatively you can provide the XYZ file contents of your own structure here')
 
 input_geom_str = st.text_area(label='XYZ file of the given/selected system', value = selected_xyz_str, placeholder = 'Put your text here', height=250)
 # Get rid of trailing empty lines
@@ -670,9 +683,9 @@ if show_parsed_coords:
     #                                     molTot.atom_pure_symbol(i),
     #                                     molTot.atom_charge(i),
     #                                     molTot.atom_coord(i)))
-    st.write('##### Charge: '+str(molTot.charge))
-    st.write('##### Spin: '+str(molTot.spin))
-    st.write('##### No. of basis functions: '+str(molTot.nao))
+    st.write('*Charge*: '+str(molTot.charge))
+    st.write('*Spin*: '+str(molTot.spin))
+    st.write('*No. of basis functions*: '+str(molTot.nao))
 
 # Error checks:
 if molTot.charge!=0:
@@ -791,10 +804,11 @@ xc = st.selectbox('Select an exchange-correlation functional',
      ( 'PBE', 'BLYP', 'BP86', 'PW91', 'SVWN','REVPBE'))
 kedf_select = st.selectbox('Select a kinetic energy density functional',
      ( 'GGA_K_LC94', 'LDA_K_TF', 'GGA_K_APBE', 'GGA_K_REVAPBE','GGA_K_TW2', 'electro'))
-dict_kedf = {'GGA_K_LC94':'521','LDA_K_TF':'50', 'electro':'electro'}
+dict_kedf = {'GGA_K_LC94':'521','LDA_K_TF':'50', 'electro':'electro', 'GGA_K_APBE':'185', 'GGA_K_REVAPBE':'55', 'GGA_K_TW2':'188'}
 kedf = dict_kedf[kedf_select]
 isDF =  st.checkbox('Use density fitting (Resolution of Identity)')
 isSupermolecularBasis =  st.checkbox('Use a supermolecular basis for the subsystems')
+# show_scf_summary =  st.checkbox('Show SCF Summary', key='scf_summary')
 
 col1, col2, col3 = st.columns([1,1,1])
 if col2.button('Run FDE calculation'):
@@ -805,9 +819,25 @@ if col2.button('Run FDE calculation'):
     with st.spinner('Running a DFT calculation on the total system for reference...'):
         mfTot = dft.RKS(molTot)
         mfTot.xc = xc
+        mfTot.conv_tol = conv_crit
         energyTot = mfTot.kernel()
+        dmTot = mfTot.make_rdm1(mfTot.mo_coeff, mfTot.mo_occ)
         if mfTot.converged:
             st.success('Reference DFT energy of the total system =   '+ str(energyTot), icon = '✅')
+            with st.expander("See SCF Summary"):
+                dump_scf_summary(mfTot)
+                mfTot.dump_scf_summary()
+                # mfTot.analyze(verbose=5, ncol=10, digits=9)
+            with st.expander('See the orbital info and density matrix of total system'):
+                st.write('#### MO Energy Info')
+                tmp_list = []
+                for i,c in enumerate(mfTot.mo_occ):
+                    # st.write('**MO** #'+str(i+1)+ '    **energy** = '+ str(mfTot.mo_energy[i])+ '     **occ** = '+str(c))
+                    tmp_list.append([str(i+1), mfTot.mo_energy[i], c])
+                df_mo_Tot = pd.DataFrame(tmp_list, columns=['MO #','Energy (Ha)','Occupation'])
+                st.write(df_mo_Tot)
+                st.write('#### Density matrix of total system')
+                st.write(dmTot)
         else:
             st.error('DFT calculation for the total system did not converge.', icon = '🚨')
             st.stop()
@@ -818,15 +848,30 @@ if col2.button('Run FDE calculation'):
         else:
             mfB = dft.RKS(molB)
         mfB.xc = xc
+        mfB.conv_tol = conv_crit
         energyB = mfB.kernel()
+        dmB = mfB.make_rdm1(mfB.mo_coeff, mfB.mo_occ)
         if mfB.converged:
             st.success('DFT energy of the environment (subsystem B) =   '+ str(energyB), icon = '✅')
+            with st.expander("See SCF Summary"):
+                dump_scf_summary(mfB)
+                mfB.dump_scf_summary()
+            with st.expander('See the orbital info and density matrix of subsystem B'):
+                st.write('#### MO Energy Info')
+                tmp_list = []
+                for i,c in enumerate(mfB.mo_occ):
+                    # st.write('**MO** #'+str(i+1)+ '    **energy** = '+ str(mfB.mo_energy[i])+ '     **occ** = '+str(c))
+                    tmp_list.append([str(i+1), mfB.mo_energy[i], c])
+                df_mo_B = pd.DataFrame(tmp_list, columns=['MO #','Energy (Ha)','Occupation'])
+                st.write(df_mo_B)
+                st.write('#### Density matrix of Subsystem B')
+                st.write(dmB)
+                
         else:
             st.error('DFT calculation for the environment (subsystem B) did not converge.', icon = '🚨')
             st.stop()
     
     with st.spinner('Running an FDE calculation on the active subsystem (subsystem A) using the frozen density of isolated B...'):
-        dmB = mfB.make_rdm1(mfB.mo_coeff, mfB.mo_occ)
         excB = mfB.scf_summary['exc']
         
         if isDF:
@@ -849,20 +894,45 @@ if col2.button('Run FDE calculation'):
         
         energyA_FDE, E_intAB, dmA_fde = scf1(molB, molA, mfA, mfB, molTot, mfTot, dmB, excB, Jab, Vab, 40, 2000)
         if isFDEconverged:
-            st.success('FDE energy of the active subsystem (subsystem A) =   '+ str(energyA_FDE), icon = '✅')
+            st.success('FDE energy of the embedded active subsystem (subsystem A) =   '+ str(energyA_FDE), icon = '✅')
+            st.write('The above energy also includes the interaction energy (E_int) =  '+str(E_intAB))
+            st.write('Energy of subsystem A (E_A) without the interaction energy =  '+str(energyA_FDE-E_intAB))
+            with st.expander("See SCF Summary"):
+                st.text('**** SCF Summary ****')
+                st.write('Nuclear-Electron energy of A =  '+str())
+                st.write('Kinetic energy of A =  '+str())
+                st.write('Nuclear-Nuclear energy of A =  '+str())
+                st.write('Electron-Electron energy of A =  '+str())
+                st.write('XC energy of A =  '+str())
+            with st.expander('See the potential matrices'):
+                st.write('#### Embedding potential matrix')
+                st.latex(r'V^\mathrm{emb}_{\mu \nu} = \left<\mu \right | v_{\mathrm{emb}} \left | \nu \right>')
+                st.write(embPot)
+                st.write('#### Nuclear potential matrix due to the subsystem B')
+                st.latex(r'V^{\mathrm{nuc};\mathrm{B}}_{\mu \nu} = \left<\mu \right | v_{\mathrm{nuc}}^\mathrm{B} \left | \nu \right>')
+                st.write(Vab)
+                st.write('#### Coulomb potential matrix due to the electrons of subsystem B')
+                st.latex(r'J^\mathrm{B}_{\mu \nu} = \left<\mu \right | \int \frac{\rho^{\mathrm{B}}\left(\boldsymbol{r}^{\prime}\right)}{\left|\boldsymbol{r}-\boldsymbol{r}^{\prime}\right|} d \boldsymbol{r}^{\prime} \left | \nu \right>')
+                st.write(Jab)
+                st.write('#### Non-additive exchange-correlation potential matrix')
+                st.latex(r'X^\mathrm{nadd}_{\mu \nu} = \left<\mu \right | \frac{\delta E_{\mathrm{xc}}^{\mathrm{nadd}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right]}{\delta \rho^{\mathrm{A}}(\boldsymbol{r})} \left | \nu \right>')
+                st.write(Vab)
+                st.write('#### Non-additive kinetic potential matrix')
+                st.latex(r'T^\mathrm{nadd}_{\mu \nu} = \left<\mu \right | \frac{\delta T_{\mathrm{s}}^{\mathrm{nadd}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right]}{\delta \rho^{\mathrm{A}}(\boldsymbol{r})} \left | \nu \right>')
+                st.write(Vab)
+            with st.expander('See the orbital info and density matrix'):
+                st.write(dmA_fde)
+
         else:
             st.error('FDE calculation for the active subsystem did not converge.', icon = '🚨')
             st.stop()
+    st.write('The energy of the total system from FDE')
+    st.latex('E_\mathrm{Tot} = E_\mathrm{A}+E_\mathrm{B}+E_\mathrm{int}')
     energyTot_FDE = energyA_FDE + energyB
     st.success('Energy of the total system from FDE =   '+ str(energyTot_FDE), icon = '✅')
-    st.write('Nuclear-Electron energy of A =  '+str())
-    st.write('Kinetic energy of A =  '+str())
-    st.write('Nuclear-Nuclear energy of A =  '+str())
-    st.write('Electron-Electron energy of A =  '+str())
-    st.write('XC energy of A =  '+str())
-    st.write('The energy of the total system is calculated as')
-    st.latex('E_\mathrm{Tot} = E_\mathrm{A}+E_\mathrm{B}+E_\mathrm{int}')
     
     
-
-    st.write('Error (E_DFT - E_FDE) = '+str(energyTot-energyTot_FDE))
+    
+    st.write('Error with respect to a regular KS-DFT calculation on the total system')
+    st.latex(r'\Delta E = E^\mathrm{tot}_\mathrm{DFT} - E^\mathrm{tot}_\mathrm{FDE}')
+    st.info('*Error (E_DFT - E_FDE)* = '+str(energyTot-energyTot_FDE))

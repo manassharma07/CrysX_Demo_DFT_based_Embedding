@@ -12,7 +12,7 @@ menu_items={
 st.sidebar.write('# About')
 st.sidebar.write('### Made By [Manas Sharma](https://www.bragitoff.com/about/)')
 st.sidebar.write('### *Powered by*')
-st.sidebar.write('* [PySCF](https://pyscf.org/) for Quantum Chemistry calculations')
+st.sidebar.write('* [PySCF](https://pyscf.org/) for Molecular Integrals and DFT Calculations')
 st.sidebar.write('* [Py3Dmol](https://3dmol.csb.pitt.edu/) for Chemical System Visualizations')
 st.sidebar.write('* [Streamlit](https://streamlit.io/) for making of the Web App')
 st.sidebar.write('## Brought to you by [CrysX](https://www.bragitoff.com/crysx/)')
