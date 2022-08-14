@@ -14,11 +14,12 @@ isSupermolecularBasis = False
 mfTot = None
 molTot = None
 kedf = ''
+ks = None
 
 # st.write(rks.get_veff)
-get_veff_original = dft.rks.get_veff 
-energy_elec_original = dft.rks.energy_elec
-energy_tot_original = scf.hf.energy_tot
+# get_veff_original = scf.RHF.get_veff 
+# energy_elec_original = scf.RHF.energy_elec
+# energy_tot_original = scf.RHF.energy_tot
 
 def energy_elec(ks, dm=None, h1e=None, vhf=None):
     r'''
@@ -52,13 +53,13 @@ def energy_tot(mf, dm=None, h1e=None, vhf=None):
 
 
 
-def get_veff(ks, mol=None, dm=None, dm_last=0, vhf_last=0, hermi=1):
+def get_veff(mol=None, dm=None, dm_last=0, vhf_last=0, hermi=1, *args, **kwargs):
     '''Coulomb + XC functional
     '''
-    global dmB, isSupermolecularBasis, mfTot
+    global dmB, isSupermolecularBasis, mfTot, ks
     if mol is None: mol = ks.mol
     if dm is None: dm = ks.make_rdm1()
-    ks.initialize_grids(mol, dm)
+    dft.rks.initialize_grids(mol, dm)
 
     if isSupermolecularBasis:
         dmTot = dm + dmB
@@ -464,15 +465,21 @@ if col2.button('Run FDE calculation'):
     
     with st.spinner('Running an FDE calculation on the active subsystem (subsystem A)...'):
         dmB = mfB.make_rdm1()
-        dft.rks.get_veff = get_veff
-        dft.rks.energy_elec = energy_elec
-        scf.hf.energy_tot = energy_tot
+        # mfB.initialize_grids(molB, dmB)
+        # scf.RKS.get_veff = get_veff
+        # scf.RKS.energy_elec = energy_elec
+        # scf.hf.energy_tot = energy_tot
         if isDF:
             mfA = dft.RKS(molA).density_fit(auxbasis='weigend')
         else:
             mfA = dft.RKS(molA)
         mfA.xc = xc
-        
+        ks = mfA
+        mfA.get_veff = get_veff
+        mfA.energy_tot = energy_tot
+        mfA.energy_elec = energy_elec
+        H_core = get_hcore(molA, molB, dmB=dmB)
+        mfA.get_hcore = lambda *args: H_core
         energyA_FDE = mfA.kernel()
         if mfA.converged:
             st.success('FDE energy of the active subsystem (subsystem A) =   '+ str(energyA_FDE), icon = '✅')
