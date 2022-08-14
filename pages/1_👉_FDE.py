@@ -821,6 +821,8 @@ kedf_select = st.selectbox('Select a kinetic energy density functional',
 dict_kedf = {'GGA_K_LC94':'521','LDA_K_TF':'50', 'electro':'electro', 'GGA_K_APBE':'185', 'GGA_K_REVAPBE':'55', 'GGA_K_TW2':'188'}
 kedf = dict_kedf[kedf_select]
 isDF =  st.checkbox('Use density fitting (Resolution of Identity)')
+exponent = st.slider('Convergence criteria', 5, 8, 7)
+conv_crit = 10**(-exponent)
 
 # show_scf_summary =  st.checkbox('Show SCF Summary', key='scf_summary')
 
