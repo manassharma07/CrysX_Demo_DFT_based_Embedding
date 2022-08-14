@@ -1,6 +1,6 @@
 streamlit
 py3Dmol
-pyscf==1.7.1
 pandas
 numpy
 scipy
+pyscf
