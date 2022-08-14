@@ -16,6 +16,7 @@ isFrozen = True
 isXCchange = False
 isNucAdensB = True
 isNucAauxB = False
+isFDEconverged = False
 
 def nucAux(molA, molB, molTotal, dmatB):
     global isSupermolecular, basisSetA
@@ -235,6 +236,7 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
     global isXCchange
     global isFrozen
     global isNucAdensB, isNucAauxB
+    global isFDEconverged
     
     #INPUT:
     #Jab: Electron(A)-Electron(B) Coulomb Matrix due to B in basis of A
@@ -414,6 +416,7 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
             e_tot_old = e_tot_New
             cycle = cycle + 1        
 
+    isFDEconverged = scf_conv
     #After SCF, perform an extra diagonalization in case of level-shifting to remove it
     mo_energy, mo_coeff = mfA.eig(Fo, S_AA) #Use original Fock matrix Fo
     mo_occ = mfA.get_occ(mo_energy, mo_coeff)
@@ -845,7 +848,7 @@ if col2.button('Run FDE calculation'):
         Vab = Vnuctot - molA.intor('int1e_nuc') 
         
         energyA_FDE, E_intAB, dmA_fde = scf1(molB, molA, mfA, mfB, molTot, mfTot, dmB, excB, Jab, Vab, 40, 2000)
-        if mfA.converged:
+        if isFDEconverged:
             st.success('FDE energy of the active subsystem (subsystem A) =   '+ str(energyA_FDE), icon = '✅')
         else:
             st.error('FDE calculation for the active subsystem did not converge.', icon = '🚨')
