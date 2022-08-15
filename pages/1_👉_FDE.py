@@ -995,12 +995,12 @@ if col2.button('Run FDE calculation'):
     st.latex(r'\Delta E = E^\mathrm{tot}_\mathrm{DFT} - E^\mathrm{tot}_\mathrm{FDE}')
     st.info('##### *Error (E_DFT - E_FDE)* = '+str(energyTot-energyTot_FDE)+'  a.u.')
 
-    if isSupermolecularBasis:
-        mfTot = dft.RKS(molTot)
-        mfTot.verbose = 4
-        mfTot.xc = xc
-        mfTot.conv_tol = conv_crit
-        # energyTot = mfTot.kernel()
-        mfTot.max_cycle=0
-        energyTot_FDE2=mfTot.kernel(dmA_fde+dmB)
-        st.write('check:',energyTot_FDE2)
+    # if isSupermolecularBasis:
+    #     mfTot = dft.RKS(molTot)
+    #     mfTot.verbose = 4
+    #     mfTot.xc = xc
+    #     mfTot.conv_tol = conv_crit
+    #     # energyTot = mfTot.kernel()
+    #     mfTot.max_cycle=0
+    #     energyTot_FDE2=mfTot.kernel(dmA_fde+dmB)
+    #     st.write('check:',energyTot_FDE2)
