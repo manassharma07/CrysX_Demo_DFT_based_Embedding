@@ -281,6 +281,7 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
         #KE Func Potential for density of B
         # 'ekeF_B' is needed to calculate the correct energy of A
         n_B, ekeF_B, KEF_B = ni.nr_rks(molB, mfB.grids, kedf, dmatB)
+        n_B, ekeF_B, KEF_B = ni.nr_rks(molTotal, mfTotal.grids, kedf, dmatB)
     #Overlap Matrix of A in basis of A
     S_AA = mfA.get_ovlp(molA)
     #KE + Vnuc matrix of A in basis of A
@@ -531,6 +532,7 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
     #As in this case we skip its calculation during the SCF stage. 
     #But it is still needed to get the correct embedding potential.
     n_A, eXC_A, XC_A2 = ni.nr_rks(molA, mfA.grids, mfA.xc, dmatNew, max_memory=max_memory)
+    n_A, eXC_A, XC_A2 = ni.nr_rks(molTotal, mfTotal.grids, mfA.xc, dmatNew, max_memory=max_memory)
     print('XC_Energy Cluster                            '+str(eXC_A), flush=True)   #XC energy of A using xcName (env)
     nadd_eXC = exc_AandB - eXC_A - excB
     print('XC_Energy nadd                            '+str(nadd_eXC), flush=True)
