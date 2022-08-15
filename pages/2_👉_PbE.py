@@ -1014,3 +1014,4 @@ if col2.button('Run PbE calculation'):
         mfTot.max_cycle=0
         energyTot_FDE2=mfTot.kernel(dmA_fde+dmB)
         st.write('check:',energyTot_FDE2)
+        dump_scf_summary(mfTot)
