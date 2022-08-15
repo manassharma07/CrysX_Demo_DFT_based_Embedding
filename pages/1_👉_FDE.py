@@ -997,6 +997,7 @@ if col2.button('Run FDE calculation'):
 
     if isSupermolecularBasis:
         mfTot = dft.RKS(molTot)
+        mfTot.verbose = 4
         mfTot.xc = xc
         mfTot.conv_tol = conv_crit
         # energyTot = mfTot.kernel()
