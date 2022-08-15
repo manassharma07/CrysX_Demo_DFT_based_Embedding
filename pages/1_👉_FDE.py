@@ -1002,5 +1002,5 @@ if col2.button('Run FDE calculation'):
         mfTot.conv_tol = conv_crit
         # energyTot = mfTot.kernel()
         mfTot.max_cycle=0
-        energyTot_FDE2=mfTot.kernel(dm=dmA_fde+dmB)
+        energyTot_FDE2=mfTot.kernel(dmA_fde+dmB)
         st.write('check:',energyTot_FDE2)
