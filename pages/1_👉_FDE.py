@@ -996,6 +996,10 @@ if col2.button('Run FDE calculation'):
     st.info('##### *Error (E_DFT - E_FDE)* = '+str(energyTot-energyTot_FDE)+'  a.u.')
 
     if isSupermolecularBasis:
+        mfTot = dft.RKS(molTot)
+        mfTot.xc = xc
+        mfTot.conv_tol = conv_crit
+        # energyTot = mfTot.kernel()
         mfTot.max_cycle=0
         energyTot_FDE2=mfTot.kernel(dm=dmA_fde+dmB)
         st.write('check:',energyTot_FDE2)
