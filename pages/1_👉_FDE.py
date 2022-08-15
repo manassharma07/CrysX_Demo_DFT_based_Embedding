@@ -22,7 +22,7 @@ conv_crit = 1e-7
 def dump_scf_summary(mf):
     summary = mf.scf_summary
     
-    st.text('**** SCF Summary ****')
+    # st.text('**** SCF Summary ****')
     st.write('Total Energy =                    ', mf.e_tot)
     st.write('Nuclear Repulsion Energy =        ', summary['nuc'])
     st.write('One-electron Energy =             ', summary['e1'])
@@ -468,38 +468,43 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
     print('|Converged Energy: ',e_tot_Final, flush=True) 
     print('----------------------------------')
     
-    
-    
+    ke_cluster = calculateEnergy(dmatNew, molA.intor('int1e_kin'))
+    e_nn_cluster = mfA.energy_nuc()
+    e_nucA_nucB = energy_nuc(molA, molB)
+    e_coul_nucA_densA = calculateEnergy(dmatNew, molA.intor('int1e_nuc'))
+    e_coul_densA_densA = calculateEnergy(dmatNew, J_AA)*0.5
+    e_nucA_densB = nucDensB(molA, molB, molTotal, dmatB)
+    e_coul_densA_nucB_densB = calculateEnergy(dmatNew, EmbdmatPot)
     #Debug
     #print(abs(dmatNew - dmA).max())
     print('Cycles:=\t                                   '+str(cycle), flush=True)
-    print('KE cluster=\t                                '+str(calculateEnergy(dmatNew, molA.intor('int1e_kin'))), flush=True)
+    print('KE cluster=\t                                '+str(ke_cluster), flush=True)
     #print('Enuc cluster ',calculateEnergy(dmatNew, molA.intor('int1e_nuc')))
     #print('Enuc total ',calculateEnergy(dmatNew, molTotal.intor('int1e_nuc')))
     #print('Enuc total - Enuc cluster ',calculateEnergy(dmatNew, molTotal.intor('int1e_nuc')))
     print('Enuc-nuc total=\t                            '+str(mfTotal.energy_nuc()), flush=True)
-    print('Enuc-nuc cluster=\t                          '+str(mfA.energy_nuc()), flush=True)
-    print('Enuc-nuc total - Enuc-nuc cluster=\t         '+str(energy_nuc(molA, molB)), flush=True)
+    print('Enuc-nuc cluster=\t                          '+str(e_nn_cluster), flush=True)
+    print('Enuc-nuc total - Enuc-nuc cluster=\t         '+str(e_nucA_nucB), flush=True)
     print('XC_Energy env=\t                             '+str(excB), flush=True)
     print('XC_Energy Total=\t                           '+str(exc_AandB), flush=True)
     print('KEDF_Energy env=\t                           '+str(ekeF_B), flush=True)
     print('KEDF_Energy clus=\t                          '+str(ekeF_A), flush=True)
     print('KEDF_Energy Total=\t                         '+str(ekeF_AandB), flush=True)
     print('KEDF_Energy nadd=\t                          '+str(nadd_eKE), flush=True)
-    print('Electrostatic Embedding_Energy Total=\t      '+str(calculateEnergy(dmatNew, EmbdmatPot)), flush=True)
+    print('Electrostatic Embedding_Energy Total=\t      '+str(e_coul_densA_nucB_densB), flush=True)
     if isDF:
         if isNucAdensB:
-            print('nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)), flush=True)
+            print('nucAdensB energy=\t                          '+str(e_nucA_densB), flush=True)
             #Debug
             #print('(Debug)nucAauxB energy=\t                          '+str(nucAux(molA, molB, molTotal, dmatB)[0]))
             #print('(Debug)nucAauxB energy=\t                          '+str(nucAux2(molA, molB, molTotal, dmatBprime)[0]))
         else:
             print('nucAauxB energy=\t                          '+str(nucAux(molA, molB, molTotal, dmatB)[0]), flush=True)
             #Debug
-            print('(Debug)nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)), flush=True)
+            print('(Debug)nucAdensB energy=\t                          '+str(e_nucA_densB), flush=True)
     else:
-        print('nucAdensB energy=\t                          '+str(nucDensB(molA, molB, molTotal, dmatB)), flush=True)
-    print('Couenrgy: Enuc+ J clu=\t                     '+str(calculateEnergy(dmatNew, J_AA)*0.5+calculateEnergy(dmatNew, molA.intor('int1e_nuc'))), flush=True)
+        print('nucAdensB energy=\t                          '+str(e_nucA_densB), flush=True)
+    print('Couenrgy: Enuc+ J clu=\t                     '+str(e_coul_densA_densA + e_coul_nucA_densA), flush=True)
     print('Exchange energy=\t                            '+str(eK), flush=True)
 
     #print('Embedding Potential')
@@ -518,22 +523,27 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
     #But it is still needed to get the correct embedding potential.
     n_A, eXC_A, XC_A2 = ni.nr_rks(molA, mfA.grids, mfA.xc, dmatNew, max_memory=max_memory)
     print('XC_Energy Cluster                            '+str(eXC_A), flush=True)   #XC energy of A using xcName (env)
-        
-    print('XC_Energy nadd                            '+str(exc_AandB - eXC_A - excB), flush=True)
+    nadd_eXC = exc_AandB - eXC_A - excB
+    print('XC_Energy nadd                            '+str(nadd_eXC), flush=True)
 
     #Construct the Embedding potential
     embPot = EmbdmatPot + nAdd_KE_Pot + XC_AandB_basA - XC_A2
     
     if isDF:
         if isNucAdensB:
-            E_int = exc_AandB - eXC_A - excB + nadd_eKE + calculateEnergy(dmatNew, EmbdmatPot) + energy_nuc(molA, molB) + nucDensB(molA, molB, molTotal, dmatB)
+            E_int = nadd_eXC + nadd_eKE + e_coul_densA_nucB_densB + e_nucA_nucB + e_nucA_densB
         else:
-            E_int = exc_AandB - eXC_A - excB + nadd_eKE + calculateEnergy(dmatNew, EmbdmatPot) + energy_nuc(molA, molB) + nucAux(molA, molB, molTotal, dmatB)[0]
+            E_int = nadd_eXC + nadd_eKE + e_coul_densA_nucB_densB + e_nucA_nucB + nucAux(molA, molB, molTotal, dmatB)[0]
     else:
-        E_int = exc_AandB - eXC_A - excB + nadd_eKE + calculateEnergy(dmatNew, EmbdmatPot) + energy_nuc(molA, molB) + nucDensB(molA, molB, molTotal, dmatB)
+        E_int = nadd_eXC + nadd_eKE + e_coul_densA_nucB_densB + e_nucA_nucB + e_nucA_densB
     print('Embedding energy from DFT embeddding potential and DFT cluster density', E_int, flush=True)
 
-    return e_tot_Final, E_int, dmatNew
+    pot_matrices = {'nadd_KE_pot':nAdd_KE_Pot, 'nadd_XC_pot':XC_AandB_basA - XC_A2, 'coul_A':J_AA}
+    energies = {'ke_cluster':ke_cluster, 'e_nn_cluster':e_nn_cluster,'e_nucA_nucB':e_nucA_nucB,'nadd_eXC':nadd_eXC,
+                'nadd_eKE':nadd_eKE,'e_nucA_densB':e_nucA_densB,'e_coul_densA_nucB_densB':e_coul_densA_nucB_densB,
+                'exc_cluster':eXC_A,'e_coul_nucA_densA':e_coul_nucA_densA, 'e_coul_densA_densA':e_coul_densA_densA} 
+    mo_info = {'mo_occ':mo_occ, 'mo_energy':mo_energy, 'mo_coeff':mo_coeff}
+    return e_tot_Final, E_int, dmatNew, pot_matrices, energies, mo_info
 
 
 
@@ -560,7 +570,7 @@ st.sidebar.write('## Brought to you by [CrysX](https://www.bragitoff.com/crysx/)
 
 # Main app
 st.write('# CrysX-DEMO: Frozen Density Embedding (FDE)')
-st.write('This is an online demo of frozen density embedding (FDE). You can perform FDE calculations on the already available small test systems or use your own. NOTE: Calculations can only be performed for systems with less than 50 basis functions due to limited compute resources on the server where the web app is freely hosted.')
+st.write('This is an online demo of frozen density embedding (FDE) using Gaussian basis functions. You can perform FDE calculations on the already available small test systems or use your own. NOTE: Calculations can only be performed for systems with less than 50 basis functions due to limited compute resources on the server where the web app is freely hosted.')
 st.write('FDE utilizes an embedding potential of the following form')
 st.latex(r'v_{\mathrm{emb}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}, v_{\mathrm{nuc}}^{\mathrm{B}}\right](\boldsymbol{r})=v_{\mathrm{nuc}}^{\mathrm{B}}(\boldsymbol{r}) + \int \frac{\rho^{\mathrm{B}}\left(\boldsymbol{r}^{\prime}\right)}{\left|\boldsymbol{r}-\boldsymbol{r}^{\prime}\right|} d \boldsymbol{r}^{\prime} + \frac{\delta E_{\mathrm{xc}}^{\mathrm{nadd}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right]}{\delta \rho^{\mathrm{A}}(\boldsymbol{r})} + \frac{\delta T_{\mathrm{s}}^{\mathrm{nadd}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right]}{\delta \rho^{\mathrm{A}}(\boldsymbol{r})}')
 # DATA for test systems
@@ -816,6 +826,14 @@ if show_subsystem_information:
     col2.write('*Charge*: '+str(molB.charge))
     col2.write('*Spin*: '+str(molB.spin))
     col2.write('*No. of basis functions*: '+str(molB.nao))
+    massA = molA.atom_mass_list()
+    coordsA = molA.atom_coords()
+    comA = np.einsum('i,ij->j', massA, coordsA)/massA.sum()
+    massB = molB.atom_mass_list()
+    coordsB = molB.atom_coords()
+    comB = np.einsum('i,ij->j', massB, coordsB)/massB.sum()
+    bohr2angs = 0.529177249 
+    st.write('*Distance between the two subsystems*:  '+str(np.linalg.norm(comA-comB)*bohr2angs)+'  Angstroms')
 
 # st.snow()
 
@@ -839,13 +857,14 @@ if col2.button('Run FDE calculation'):
         st.stop()
 
     with st.spinner('Running a DFT calculation on the total system for reference...'):
+        # st.write('#### DFT on Total System for Reference')
         mfTot = dft.RKS(molTot)
         mfTot.xc = xc
         mfTot.conv_tol = conv_crit
         energyTot = mfTot.kernel()
         dmTot = mfTot.make_rdm1(mfTot.mo_coeff, mfTot.mo_occ)
         if mfTot.converged:
-            st.success('Reference DFT energy of the total system =   '+ str(energyTot), icon = '✅')
+            st.success('##### Reference DFT energy of the total system =   **'+ str(energyTot)+'**'+'  a.u.', icon = '✅')
             with st.expander("See SCF Summary"):
                 dump_scf_summary(mfTot)
                 mfTot.dump_scf_summary()
@@ -865,6 +884,7 @@ if col2.button('Run FDE calculation'):
             st.stop()
     
     with st.spinner('Running a DFT calculation on the environment (subsystem B)...'):
+        st.info('#### Step 1: Calculate the density of isolated subsystem B')
         if isDF:
             mfB = dft.RKS(molB).density_fit(auxbasis='weigend')
         else:
@@ -874,7 +894,7 @@ if col2.button('Run FDE calculation'):
         energyB = mfB.kernel()
         dmB = mfB.make_rdm1(mfB.mo_coeff, mfB.mo_occ)
         if mfB.converged:
-            st.success('DFT energy of the environment (subsystem B) =   '+ str(energyB), icon = '✅')
+            st.success('##### DFT energy of the isolated environment (subsystem B) =   **'+ str(energyB)+'**'+'  a.u.', icon = '✅')
             with st.expander("See SCF Summary"):
                 dump_scf_summary(mfB)
                 mfB.dump_scf_summary()
@@ -893,7 +913,9 @@ if col2.button('Run FDE calculation'):
             st.error('DFT calculation for the environment (subsystem B) did not converge.', icon = '🚨')
             st.stop()
     
-    with st.spinner('Running an FDE calculation on the active subsystem (subsystem A) using the frozen density of isolated B...'):
+    with st.spinner('##### Running an FDE calculation on the active subsystem (subsystem A) using the frozen density of isolated B...'):
+        st.info('#### Step 2: Solving the Kohn Sham Constrained Electron Density (KSCED) equations')
+        st.latex(r'\left[-\frac{\nabla^{2}}{2}+v_{\mathrm{eff}}^{\mathrm{KS}}\left[\rho^{\mathrm{A}}\right](\boldsymbol{r})+v_{\mathrm{emb}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right](\boldsymbol{r})\right] \phi_{i}^{(\mathrm{A})}(\boldsymbol{r})=\epsilon_{i} \phi_{i}^{(\mathrm{A})}(\boldsymbol{r}) \quad ; \quad i=1, \ldots, N_{\mathrm{A}} / 2')
         excB = mfB.scf_summary['exc']
         
         if isDF:
@@ -914,35 +936,49 @@ if col2.button('Run FDE calculation'):
         #Nuclear matrix of A due to B
         Vab = Vnuctot - molA.intor('int1e_nuc') 
         
-        energyA_FDE, E_intAB, dmA_fde = scf1(molB, molA, mfA, mfB, molTot, mfTot, dmB, excB, Jab, Vab, 40, 2000)
+        energyA_FDE, E_intAB, dmA_fde, pot_matrices, energies, mo_info  = scf1(molB, molA, mfA, mfB, molTot, mfTot, dmB, excB, Jab, Vab, 40, 2000)
         if isFDEconverged:
-            st.success('FDE energy of the embedded active subsystem (subsystem A) =   '+ str(energyA_FDE), icon = '✅')
-            st.write('The above energy also includes the interaction energy (E_int) =  '+str(E_intAB))
-            st.write('Energy of subsystem A (E_A) without the interaction energy =  '+str(energyA_FDE-E_intAB))
+            st.success('##### FDE energy of the embedded active subsystem (subsystem A) =   **'+ str(energyA_FDE)+'**'+'  a.u.', icon = '✅')
+            st.write('The above energy also includes the interaction energy (E_int) =  '+str(E_intAB)+'  a.u.')
+            st.write('Energy of subsystem A (E_A) without the interaction energy =  '+str(energyA_FDE-E_intAB)+'  a.u.')
             with st.expander("See SCF Summary"):
-                st.text('**** SCF Summary ****')
-                st.write('Nuclear-Electron energy of A =  '+str())
-                st.write('Kinetic energy of A =  '+str())
-                st.write('Nuclear-Nuclear energy of A =  '+str())
-                st.write('Electron-Electron energy of A =  '+str())
-                st.write('XC energy of A =  '+str())
+                # st.text('**** SCF Summary ****')
+                st.write('##### Energies of subsystem A')
+                st.write('Kinetic energy of A =  '+str(energies['ke_cluster'])+'  a.u.')
+                st.write('Electron_A-Electron_A energy =  '+str(energies['e_coul_densA_densA'])+'  a.u.')
+                st.write('Nuclear_A-Electron_A energy =  '+str(energies['e_coul_nucA_densA'])+'  a.u.')
+                st.write('Exchange correlation energy of A =  '+str(energies['exc_cluster'])+'  a.u.')
+                st.write('Nuclear_A-Nuclear_A energy =  '+str(energies['e_nn_cluster'])+'  a.u.')
+                st.write('##### Energies due to interaction with subsystem B')
+                st.write('Electron_A-Nuclear_B + Electron_A-Electron_B energy =  '+str(energies['e_coul_densA_nucB_densB'])+'  a.u.')
+                st.write('Non-additive kinetic energy =  '+str(energies['nadd_eKE'])+'  a.u.')
+                st.write('Non-additive exchange-correlation energy =  '+str(energies['nadd_eXC'])+'  a.u.')
+                st.write('NuclearA-NuclearB energy =  '+str(energies['e_nucA_nucB'])+'  a.u.')
+                st.write('NuclearA-ElectronB energy = '+str(energies['e_nucA_densB'])+'  a.u.')
             with st.expander('See the potential matrices'):
                 st.write('#### Embedding potential matrix')
                 st.latex(r'V^\mathrm{emb}_{\mu \nu} = \left<\mu \right | v_{\mathrm{emb}} \left | \nu \right>')
                 st.write(embPot)
-                st.write('#### Nuclear potential matrix due to the subsystem B')
+                st.write('#### Nuclear potential matrix due to the nuclei of subsystem B in the basis of A')
                 st.latex(r'V^{\mathrm{nuc};\mathrm{B}}_{\mu \nu} = \left<\mu \right | v_{\mathrm{nuc}}^\mathrm{B} \left | \nu \right>')
                 st.write(Vab)
-                st.write('#### Coulomb potential matrix due to the electrons of subsystem B')
+                st.write('#### Coulomb potential matrix due to the electrons of subsystem B in the basis of A')
                 st.latex(r'J^\mathrm{B}_{\mu \nu} = \left<\mu \right | \int \frac{\rho^{\mathrm{B}}\left(\boldsymbol{r}^{\prime}\right)}{\left|\boldsymbol{r}-\boldsymbol{r}^{\prime}\right|} d \boldsymbol{r}^{\prime} \left | \nu \right>')
                 st.write(Jab)
                 st.write('#### Non-additive exchange-correlation potential matrix')
                 st.latex(r'X^\mathrm{nadd}_{\mu \nu} = \left<\mu \right | \frac{\delta E_{\mathrm{xc}}^{\mathrm{nadd}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right]}{\delta \rho^{\mathrm{A}}(\boldsymbol{r})} \left | \nu \right>')
-                st.write(Vab)
+                st.write(pot_matrices['nadd_XC_pot'])
                 st.write('#### Non-additive kinetic potential matrix')
                 st.latex(r'T^\mathrm{nadd}_{\mu \nu} = \left<\mu \right | \frac{\delta T_{\mathrm{s}}^{\mathrm{nadd}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right]}{\delta \rho^{\mathrm{A}}(\boldsymbol{r})} \left | \nu \right>')
-                st.write(Vab)
+                st.write(pot_matrices['nadd_KE_pot'])
             with st.expander('See the orbital info and density matrix'):
+                st.write('#### MO Energy Info')
+                tmp_list = []
+                for i,c in enumerate(mo_info['mo_occ']):
+                    tmp_list.append([str(i+1), mo_info['mo_energy'][i], c])
+                df_mo_A = pd.DataFrame(tmp_list, columns=['MO #','Energy (Ha)','Occupation'])
+                st.write(df_mo_A)
+                st.write('#### Density matrix of embedded Subsystem A')
                 st.write(dmA_fde)
 
         else:
@@ -951,10 +987,10 @@ if col2.button('Run FDE calculation'):
     st.write('The energy of the total system from FDE')
     st.latex('E_\mathrm{Tot} = E_\mathrm{A}+E_\mathrm{B}+E_\mathrm{int}')
     energyTot_FDE = energyA_FDE + energyB
-    st.success('Energy of the total system from FDE =   '+ str(energyTot_FDE), icon = '✅')
+    st.success('##### Energy of the total system from FDE =   **'+ str(energyTot_FDE)+'**'+'  a.u.', icon = '✅')
     
     
     
     st.write('Error with respect to a regular KS-DFT calculation on the total system')
     st.latex(r'\Delta E = E^\mathrm{tot}_\mathrm{DFT} - E^\mathrm{tot}_\mathrm{FDE}')
-    st.info('*Error (E_DFT - E_FDE)* = '+str(energyTot-energyTot_FDE))
+    st.info('##### *Error (E_DFT - E_FDE)* = '+str(energyTot-energyTot_FDE)+'  a.u.')
