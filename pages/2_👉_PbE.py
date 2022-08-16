@@ -757,7 +757,7 @@ HtmlFile.close()
 dict_name_to_partition_indx = {'HF dimer': 2,'H2O dimer': 3,'NH3 dimer': 4,'Benzene-Fulvene': 6,'Ethane': 4}
 st.write('#### Select the atoms that should be used as the subsystem A (active subsystem)')
 partition_indx = st.slider('The first n selected atoms would be used as the subsystem A and the remaining as the subsystem B (environment)', 0, molTot.natm, molTot.natm//2)
-isSupermolecularBasis =  st.checkbox('Use a supermolecular basis for the subsystems')
+isSupermolecularBasis =  st.checkbox('Use a supermolecular basis for the subsystems', value=True)
 
 # Set charge for the subsystems
 col1, col2 = st.columns(2)

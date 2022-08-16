@@ -553,9 +553,9 @@ if os.path.exists('viz.html'):
     os.remove('viz.html')
 
 # Set page config
-st.set_page_config(page_title='Frozen Density Embedding', layout='wide', page_icon="🧊",
+st.set_page_config(page_title='FDE + Freeze-and-Thaw', layout='wide', page_icon="🧊",
 menu_items={
-         'About': "# This is an online demo of various DFT based embedding techniques. It lets you perform your own embedding calculations for small systems with less than 50 basis functions."
+         'About': "This is an online demo of frozen density embedding with freeze-and-thaw procedure. It lets you perform your own embedding calculations for small systems with less than 50 basis functions."
      })
 
 # Sidebar stuff
