@@ -583,7 +583,7 @@ st.sidebar.write('## Brought to you by [CrysX](https://www.bragitoff.com/crysx/)
 st.write('# CrysX-DEMO: Projection based Embedding (PbE)')
 st.write('This is an online demo of projection based embedding (PbE) using Gaussian basis functions. You can perform PbE calculations on the already available small test systems or use your own. NOTE: Calculations can only be performed for systems with less than 50 basis functions due to limited compute resources on the server where the web app is freely hosted.')
 st.write('PbE utilizes an embedding potential matrix of the following form')
-st.latex(r'v_{\mathrm{emb}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}, v_{\mathrm{nuc}}^{\mathrm{B}}\right](\boldsymbol{r})=v_{\mathrm{nuc}}^{\mathrm{B}}(\boldsymbol{r}) + \int \frac{\rho^{\mathrm{B}}\left(\boldsymbol{r}^{\prime}\right)}{\left|\boldsymbol{r}-\boldsymbol{r}^{\prime}\right|} d \boldsymbol{r}^{\prime} + \frac{\delta E_{\mathrm{xc}}^{\mathrm{nadd}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right]}{\delta \rho^{\mathrm{A}}(\boldsymbol{r})} + \frac{\delta T_{\mathrm{s}}^{\mathrm{nadd}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right]}{\delta \rho^{\mathrm{A}}(\boldsymbol{r})}')
+st.latex(r'\mathbf{V}_{\mathrm{emb}}=\mathbf{V}_{\text {nuc }}^{\mathrm{B}}+\mathbf{J}_{\text {elec }}^{\mathrm{B}}+\mathbf{X}_{\text {nadd }}+\mathbf{P}_{\mathbf{B}}')
 # DATA for test systems
 hf_dimer_xyz = '''
 4
@@ -981,7 +981,7 @@ if col2.button('Run PbE calculation'):
                 st.latex(r'X^\mathrm{nadd}_{\mu \nu} = \left<\mu \right | \frac{\delta E_{\mathrm{xc}}^{\mathrm{nadd}}\left[\rho^{\mathrm{A}}, \rho^{\mathrm{B}}\right]}{\delta \rho^{\mathrm{A}}(\boldsymbol{r})} \left | \nu \right>')
                 st.write(pot_matrices['nadd_XC_pot'])
                 st.write('#### Projection Operator matrix')
-                st.latex(r'\mathbf{P_b}=\mathbf{S^{AB}D^BS^{BA}}')
+                st.latex(r'\mathbf{P_B}=\mu\mathbf{S^{AB}D^BS^{BA}}')
                 st.write(pot_matrices['proj_operator'])
             with st.expander('See the orbital info and density matrix'):
                 st.write('#### MO Energy Info')
