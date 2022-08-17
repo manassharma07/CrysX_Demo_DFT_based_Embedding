@@ -870,7 +870,10 @@ if col2.button('Run PbE calculation'):
 
     with st.spinner('Running a DFT calculation on the total system for reference...'):
         # st.write('#### DFT on Total System for Reference')
-        mfTot = dft.RKS(molTot)
+        if isDF:
+            mfTot = dft.RKS(molTot).density_fit(auxbasis='weigend')
+        else:
+            mfTot = dft.RKS(molTot)
         mfTot.xc = xc
         mfTot.conv_tol = conv_crit
         energyTot = mfTot.kernel()
@@ -1007,13 +1010,16 @@ if col2.button('Run PbE calculation'):
     st.latex(r'\Delta E = E^\mathrm{tot}_\mathrm{DFT} - E^\mathrm{tot}_\mathrm{FDE}')
     st.info('##### *Error (E_DFT - E_PbE)* = '+str(energyTot-energyTot_FDE)+'  a.u.')
 
-    # if isSupermolecularBasis:
-    #     mfTot = dft.RKS(molTot)
-    #     mfTot.verbose = 4
-    #     mfTot.xc = xc
-    #     mfTot.conv_tol = conv_crit
-    #     # energyTot = mfTot.kernel()
-    #     mfTot.max_cycle=0
-    #     energyTot_FDE2=mfTot.kernel(dmA_fde+dmB)
-    #     st.write('check:',energyTot_FDE2)
-    #     dump_scf_summary(mfTot)
+    if isSupermolecularBasis:
+        if isDF:
+            mfTot = dft.RKS(molTot).density_fit(auxbasis='weigend')
+        else:
+            mfTot = dft.RKS(molTot)
+        mfTot.verbose = 4
+        mfTot.xc = xc
+        mfTot.conv_tol = conv_crit
+        # energyTot = mfTot.kernel()
+        mfTot.max_cycle=0
+        energyTot_FDE2=mfTot.kernel(dmA_fde+dmB)
+        st.write('check:',energyTot_FDE2)
+        dump_scf_summary(mfTot)

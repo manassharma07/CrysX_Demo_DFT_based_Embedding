@@ -861,7 +861,7 @@ kedf = 'electro'
 isDF =  st.checkbox('Use density fitting (Resolution of Identity)')
 exponent = st.slider('Convergence criteria', 5, 8, 7)
 conv_crit = 10**(-exponent)
-fat_max_cycles = st.slider('No. of cycles to be used for FaT', 1, 4, 3)
+fat_max_cycles = st.slider('No. of cycles to be used for FaT', 1, 4, 2)
 
 # show_scf_summary =  st.checkbox('Show SCF Summary', key='scf_summary')
 
@@ -873,7 +873,10 @@ if col2.button('Run PbE + FaT calculation'):
 
     with st.spinner('Running a DFT calculation on the total system for reference...'):
         # st.write('#### DFT on Total System for Reference')
-        mfTot = dft.RKS(molTot)
+        if isDF:
+            mfTot = dft.RKS(molTot).density_fit(auxbasis='weigend')
+        else:
+            mfTot = dft.RKS(molTot)
         mfTot.xc = xc
         mfTot.conv_tol = conv_crit
         energyTot = mfTot.kernel()
@@ -1104,7 +1107,8 @@ if col2.button('Run PbE + FaT calculation'):
             energyTot_FDE = energyA_FDE + energyB_FDE - E_intAB
             st.warning('##### Energy of the total system from PbE =   **'+ str(energyTot_FDE)+'**'+'  a.u.')
 
-            st.balloons()
+            
+    # st.balloons()
         
     st.write('The final energy of the total system from PbE + FaT')
     st.latex('E_\mathrm{Tot} = E_\mathrm{A}+E_\mathrm{B}+E_\mathrm{int}')
@@ -1117,13 +1121,16 @@ if col2.button('Run PbE + FaT calculation'):
     st.latex(r'\Delta E = E^\mathrm{tot}_\mathrm{DFT} - E^\mathrm{tot}_\mathrm{FDE}')
     st.info('##### *Error (E_DFT - E_PbE)* = '+str(energyTot-energyTot_FDE)+'  a.u.')
 
-    # if isSupermolecularBasis:
-    #     mfTot = dft.RKS(molTot)
-    #     mfTot.verbose = 4
-    #     mfTot.xc = xc
-    #     mfTot.conv_tol = conv_crit
-    #     # energyTot = mfTot.kernel()
-    #     mfTot.max_cycle=0
-    #     energyTot_FDE2=mfTot.kernel(dmA_fde+dmB)
-    #     st.write('check:',energyTot_FDE2)
-    #     dump_scf_summary(mfTot)
+    if isSupermolecularBasis:
+        if isDF:
+            mfTot = dft.RKS(molTot).density_fit(auxbasis='weigend')
+        else:
+            mfTot = dft.RKS(molTot)
+        mfTot.verbose = 4
+        mfTot.xc = xc
+        mfTot.conv_tol = conv_crit
+        # energyTot = mfTot.kernel()
+        mfTot.max_cycle=0
+        energyTot_FDE2=mfTot.kernel(dmA_fde+dmB_fde)
+        st.write('check:',energyTot_FDE2)
+        dump_scf_summary(mfTot)

@@ -864,7 +864,10 @@ if col2.button('Run FDE + FaT calculation'):
 
     with st.spinner('Running a DFT calculation on the total system for reference...'):
         # st.write('#### DFT on Total System for Reference')
-        mfTot = dft.RKS(molTot)
+        if isDF:
+            mfTot = dft.RKS(molTot).density_fit(auxbasis='weigend')
+        else:
+            mfTot = dft.RKS(molTot)
         mfTot.xc = xc
         mfTot.conv_tol = conv_crit
         energyTot = mfTot.kernel()
@@ -1002,11 +1005,14 @@ if col2.button('Run FDE + FaT calculation'):
     st.info('##### *Error (E_DFT - E_FDE)* = '+str(energyTot-energyTot_FDE)+'  a.u.')
 
     # if isSupermolecularBasis:
-    #     mfTot = dft.RKS(molTot)
+    #     if isDF:
+    #         mfTot = dft.RKS(molTot).density_fit(auxbasis='weigend')
+    #     else:
+    #         mfTot = dft.RKS(molTot)
     #     mfTot.verbose = 4
     #     mfTot.xc = xc
     #     mfTot.conv_tol = conv_crit
     #     # energyTot = mfTot.kernel()
     #     mfTot.max_cycle=0
-    #     energyTot_FDE2=mfTot.kernel(dmA_fde+dmB)
+    #     energyTot_FDE2=mfTot.kernel(dmA_fde+dmB_fde)
     #     st.write('check:',energyTot_FDE2)
