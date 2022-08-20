@@ -560,7 +560,7 @@ menu_items={
 
 # Sidebar stuff
 st.sidebar.write('# About')
-st.sidebar.write('### Made By [Manas Sharma](https://www.bragitoff.com/about/)')
+st.sidebar.write('### Made By [Manas Sharma](https://manas.bragitoff.com)')
 st.sidebar.write('### *Powered by*')
 st.sidebar.write('* [PySCF](https://pyscf.org/) for Molecular Integrals and DFT Calculations')
 st.sidebar.write('* [Py3Dmol](https://3dmol.csb.pitt.edu/) for Chemical System Visualizations')
