@@ -1,5 +1,5 @@
 streamlit
-py3Dmol
+py3Dmol==1.8.0
 pandas
 numpy
 scipy
