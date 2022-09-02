@@ -1,6 +1,6 @@
-streamlit==1.11.0
-py3Dmol==1.8.0
+streamlit
 pandas
 numpy
 scipy
 pyscf
+py3Dmol
