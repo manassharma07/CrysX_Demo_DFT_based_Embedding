@@ -1119,7 +1119,7 @@ if col2.button('Run PbE + FaT calculation'):
     
     st.write('Error with respect to a regular KS-DFT calculation on the total system')
     st.latex(r'\Delta E = E^\mathrm{tot}_\mathrm{DFT} - E^\mathrm{tot}_\mathrm{FDE}')
-    st.info('##### *Error (E_DFT - E_PbE)* = '+str(energyTot-energyTot_FDE)+'  a.u.')
+    st.info('##### *Error (E_DFT - E_PbE)* = '+str(np.format_float_scientific(energyTot-energyTot_FDE, exp_digits=2, precision=4))+'  a.u.')
 
     # if isSupermolecularBasis:
     #     if isDF:
