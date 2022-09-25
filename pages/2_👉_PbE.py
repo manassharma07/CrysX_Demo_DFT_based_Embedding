@@ -877,6 +877,7 @@ if col2.button('Run PbE calculation'):
             mfTot = dft.RKS(molTot)
         mfTot.xc = xc
         mfTot.conv_tol = conv_crit
+        mfTot.max_cycle = 20
         energyTot = mfTot.kernel()
         dmTot = mfTot.make_rdm1(mfTot.mo_coeff, mfTot.mo_occ)
         if mfTot.converged:
@@ -907,6 +908,7 @@ if col2.button('Run PbE calculation'):
             mfB = dft.RKS(molB)
         mfB.xc = xc
         mfB.conv_tol = conv_crit
+        mfB.max_cycle = 20
         energyB = mfB.kernel()
         dmB = mfB.make_rdm1(mfB.mo_coeff, mfB.mo_occ)
         if mfB.converged:
@@ -952,7 +954,7 @@ if col2.button('Run PbE calculation'):
         #Nuclear matrix of A due to B
         Vab = Vnuctot - molA.intor('int1e_nuc') 
         
-        energyA_FDE, E_intAB, dmA_fde, pot_matrices, energies, mo_info  = scf1(molB, molA, mfA, mfB, molTot, mfTot, dmB, excB, Jab, Vab, 40, 2000)
+        energyA_FDE, E_intAB, dmA_fde, pot_matrices, energies, mo_info  = scf1(molB, molA, mfA, mfB, molTot, mfTot, dmB, excB, Jab, Vab, 20, 1000)
         if isFDEconverged:
             st.success('##### PbE energy of the embedded active subsystem (subsystem A) =   **'+ str(energyA_FDE)+'**'+'  a.u.', icon = '✅')
             st.write('The above energy also includes the interaction energy ($E_\mathrm{int}$) =  '+str(E_intAB)+'  a.u.')
