@@ -879,6 +879,7 @@ if col2.button('Run PbE + FaT calculation'):
             mfTot = dft.RKS(molTot)
         mfTot.xc = xc
         mfTot.conv_tol = conv_crit
+        mfTot.max_cycle = 20
         energyTot = mfTot.kernel()
         dmTot = mfTot.make_rdm1(mfTot.mo_coeff, mfTot.mo_occ)
         if mfTot.converged:
@@ -909,6 +910,7 @@ if col2.button('Run PbE + FaT calculation'):
             mfB = dft.RKS(molB)
         mfB.xc = xc
         mfB.conv_tol = conv_crit
+        mfB.max_cycle = 20
         energyB = mfB.kernel()
         dmB = mfB.make_rdm1(mfB.mo_coeff, mfB.mo_occ)
         mfB_fde = mfB
