@@ -867,6 +867,7 @@ if col2.button('Run FDE calculation'):
         mfTot.xc = xc
         mfTot.conv_tol = conv_crit
         mfTot.max_cycle = 20
+        mfTot.verbose = 4
         energyTot = mfTot.kernel()
         dmTot = mfTot.make_rdm1(mfTot.mo_coeff, mfTot.mo_occ)
         if mfTot.converged:
