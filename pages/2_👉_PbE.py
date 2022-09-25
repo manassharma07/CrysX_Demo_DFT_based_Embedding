@@ -583,7 +583,7 @@ st.sidebar.write('## Brought to you by [CrysX](https://www.bragitoff.com/crysx/)
 st.write('# CrysX-DEMO: Projection based Embedding (PbE)')
 st.write('This is an online demo of projection based embedding (PbE) using Gaussian basis functions. You can perform PbE calculations on the already available small test systems or use your own. NOTE: Calculations can only be performed for systems with less than 50 basis functions due to limited compute resources on the server where the web app is freely hosted.')
 st.write('PbE utilizes an embedding potential matrix of the following form')
-st.latex(r'\mathbf{V}_{\mathrm{emb}}=\mathbf{V}_{\text {nuc }}^{\mathrm{B}}+\mathbf{J}_{\text {elec }}^{\mathrm{B}}+\mathbf{X}_{\text {nadd }}+\mathbf{P}_{\mathbf{B}}')
+st.latex(r'\mathbf{V}_{\mathrm{emb}}=\mathbf{V}_{\text {nuc }}^{\mathrm{B}}+\mathbf{J}_{\text {elec }}^{\mathrm{B}}+\mathbf{X}_{\text {nadd }}+\mathbf{P}_{\mathrm{B}}')
 st.write('where we are utilizing a level shift projection operatr $\mathbf{P}_\mathrm{B}=\mu\mathbf{S}^\mathrm{AB}\mathbf{D}^\mathrm{B}\mathbf{S}^\mathrm{BA}$.')
 # DATA for test systems
 hf_dimer_xyz = '''
@@ -955,8 +955,8 @@ if col2.button('Run PbE calculation'):
         energyA_FDE, E_intAB, dmA_fde, pot_matrices, energies, mo_info  = scf1(molB, molA, mfA, mfB, molTot, mfTot, dmB, excB, Jab, Vab, 40, 2000)
         if isFDEconverged:
             st.success('##### PbE energy of the embedded active subsystem (subsystem A) =   **'+ str(energyA_FDE)+'**'+'  a.u.', icon = '✅')
-            st.write('The above energy also includes the interaction energy (E_int) =  '+str(E_intAB)+'  a.u.')
-            st.write('Energy of subsystem A (E_A) without the interaction energy =  '+str(energyA_FDE-E_intAB)+'  a.u.')
+            st.write('The above energy also includes the interaction energy ($E_\mathrm{int}$) =  '+str(E_intAB)+'  a.u.')
+            st.write('Energy of subsystem A ($E_\mathrm{A}$) without the interaction energy =  '+str(energyA_FDE-E_intAB)+'  a.u.')
             with st.expander("See SCF Summary"):
                 # st.text('**** SCF Summary ****')
                 st.write('##### Energies of subsystem A')
@@ -1009,7 +1009,7 @@ if col2.button('Run PbE calculation'):
     
     st.write('Error with respect to a regular KS-DFT calculation on the total system')
     st.latex(r'\Delta E = E^\mathrm{tot}_\mathrm{DFT} - E^\mathrm{tot}_\mathrm{FDE}')
-    st.info('##### *Error (E_DFT - E_PbE)* = '+str(np.format_float_scientific(energyTot-energyTot_FDE, exp_digits=2, precision=6))+'  a.u.')
+    st.info('##### *Error *($E_\mathrm{DFT} - E_\mathrm{PbE}$) = '+str(np.format_float_scientific(energyTot-energyTot_FDE, exp_digits=2, precision=6))+'  a.u.')
 
     # if isSupermolecularBasis:
     #     if isDF:
