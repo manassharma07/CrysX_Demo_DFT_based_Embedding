@@ -584,6 +584,7 @@ st.write('# CrysX-DEMO: Projection based Embedding (PbE)')
 st.write('This is an online demo of projection based embedding (PbE) using Gaussian basis functions. You can perform PbE calculations on the already available small test systems or use your own. NOTE: Calculations can only be performed for systems with less than 50 basis functions due to limited compute resources on the server where the web app is freely hosted.')
 st.write('PbE utilizes an embedding potential matrix of the following form')
 st.latex(r'\mathbf{V}_{\mathrm{emb}}=\mathbf{V}_{\text {nuc }}^{\mathrm{B}}+\mathbf{J}_{\text {elec }}^{\mathrm{B}}+\mathbf{X}_{\text {nadd }}+\mathbf{P}_{\mathbf{B}}')
+st.write('where we are utilizing a level shift projection operatr $\mathbf{P_B}=\mu\mathbf{S^{AB}D^BS^{BA}}$.')
 # DATA for test systems
 hf_dimer_xyz = '''
 4
