@@ -38,9 +38,14 @@ st.write('DFT provides a natural way to partition the system based on the electr
 st.image('embedding_pot_pic.png')
 st.write('DFT based embedding refers to the fact that the embedding potential is constructed at the DFT level, using which one may perform DFT-in-DFT or WFT-in-DFT calculations for either ground-state or excited state properties.')
 
+
+
+# Check if the app is being run on streamlit cloud
 #https://discuss.streamlit.io/t/check-if-run-local-or-at-share-streamlit-io/11841/3
-if platform.processor() is None:
-    isDemo = True
+isDemo = True
+print(platform.processor().type)
+if platform.processor():
+    isDemo = False
     
 if isDemo:
     st.write('This web app is being run on streamlit cloud with limited resources. Therefore, you can only run calculations on systems with less than 50 basis functions.')
