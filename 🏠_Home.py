@@ -1,6 +1,5 @@
 import streamlit as st
-# from pyscf import gto, dft
-# import numpy as np
+import platform
 
 # Set page config
 st.set_page_config(page_title='CrysX-DEMO: DFT based Embedding', layout='wide', page_icon="🧊",
@@ -38,3 +37,7 @@ st.image('embedding_pic.png')
 st.write('DFT provides a natural way to partition the system based on the electronic density. Then the influence of the environment subsystem onto the active subsystem can be considered using an embedding potential which is a functional of both the active and environment subsystem densities.')
 st.image('embedding_pot_pic.png')
 st.write('DFT based embedding refers to the fact that the embedding potential is constructed at the DFT level, using which one may perform DFT-in-DFT or WFT-in-DFT calculations for either ground-state or excited state properties.')
+
+st.write('#### Debugging:')
+st.write('This web app is being run on:')
+st.write(platform.processor())
