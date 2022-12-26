@@ -43,7 +43,6 @@ st.write('DFT based embedding refers to the fact that the embedding potential is
 # Check if the app is being run on streamlit cloud
 #https://discuss.streamlit.io/t/check-if-run-local-or-at-share-streamlit-io/11841/3
 isDemo = True
-print(platform.processor().type)
 if platform.processor():
     isDemo = False
     
