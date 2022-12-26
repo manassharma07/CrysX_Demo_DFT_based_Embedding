@@ -47,4 +47,4 @@ if platform.processor():
     isDemo = False
     
 if isDemo:
-    st.write('This web app is being run on streamlit cloud with limited resources. Therefore, you can only run calculations on systems with less than 50 basis functions.')
+    st.info('This web app is being run on streamlit cloud with limited resources. Therefore, you can only run calculations on systems with less than 50 basis functions.', icon = '🚨')

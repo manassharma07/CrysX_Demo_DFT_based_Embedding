@@ -8,6 +8,11 @@ import os
 import pandas as pd
 import scipy
 
+import platform
+isDemo = True
+if platform.processor():
+    isDemo = False
+
 # Some global variables (Yes unfortunately I had to use them)
 isSupermolecularBasis = False
 kedf = '521'
@@ -854,9 +859,10 @@ conv_crit = 10**(-exponent)
 
 col1, col2, col3 = st.columns([1,1,1])
 if col2.button('Run FDE calculation'):
-    if molTot.nao>=50:
-        st.error('The no. of basis functions of the total system is '+str(molTot.nao)+' which is too much for a free online tool. Please use a smaller basis set or choose a smaller system.', icon="🚨")
-        st.stop()
+    if isDemo:
+        if molTot.nao>=50:
+            st.error('The no. of basis functions of the total system is '+str(molTot.nao)+' which is too much for a free online tool. Please use a smaller basis set or choose a smaller system.', icon="🚨")
+            st.stop()
 
     with st.spinner('Running a DFT calculation on the total system for reference...'):
         # st.write('#### DFT on Total System for Reference')
