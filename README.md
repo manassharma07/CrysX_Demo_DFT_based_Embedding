@@ -29,5 +29,6 @@ The same basis set is used for the entire system. You cannot choose a different 
 The same exchange-correlation functional is used for the subsystems as well as the non-additive exchange-correlation potential term.
 
 ## Web App
-The web app is available at [https://crysx-dfet-trial.streamlit.app/]((https://crysx-dfet-trial.streamlit.app/)).
+The web app is available at [https://crysx-dfet-trial.streamlit.app/](https://crysx-dfet-trial.streamlit.app/).
+
 Hint: Use the sidebar menu on the left to navigate between FDE, FDE+FaT, PbE, PBE+FaT. The menu may be hidden on mobile devices so you will need to expand it first by clicking on the arrow icon in the upper-left corner.
