@@ -1,5 +1,5 @@
 # CrysX - DEMO of DFT-based Embedding
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)]([https://crysx.streamlit.app](https://crysx-dfet-trial.streamlit.app/))
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://crysx-dfet-trial.streamlit.app/)
 
 This GitHub repo contains all the source code of a streamlit web application demonstrating the DFT-based embedding methods. 
 
