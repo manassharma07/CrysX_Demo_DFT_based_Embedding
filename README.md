@@ -1,7 +1,7 @@
 # CrysX - DEMO of DFT-based Embedding
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)]([https://crysx.streamlit.app](https://crysx-dfet-trial.streamlit.app/))
 
-This GitHub repo contains al the source code of a streamlit web application demonstrating the DFT-based embedding methods. 
+This GitHub repo contains all the source code of a streamlit web application demonstrating the DFT-based embedding methods. 
 
 The [streamlit web app](https://crysx-dfet-trial.streamlit.app/) provides an online interactive demo of various density functional theory (DFT) based embedding techniques like Frozen Density Embedding and Projection-based Embedding.
 
