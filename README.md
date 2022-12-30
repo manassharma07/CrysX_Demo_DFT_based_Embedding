@@ -11,8 +11,8 @@ The purpose of this interactive web application is to complement my thesis, post
 
 The online web app contains the following features:
 
-* Frozen Density Embedding (FDE) calculation with and without Freeze-and-Thaw (FaT)
-* Projection-based Embedding (PbE) calculation with and without Freeze-and-Thaw (FaT)
+* [Frozen Density Embedding (FDE)](https://crysx-dfet-trial.streamlit.app/FDE) calculation with and without [Freeze-and-Thaw (FaT)](https://crysx-dfet-trial.streamlit.app/FDE_+_FaT)
+* [Projection-based Embedding (PbE)](https://crysx-dfet-trial.streamlit.app/PbE) calculation with and without [Freeze-and-Thaw (FaT)](https://crysx-dfet-trial.streamlit.app/PbE_+_FaT)
 
 Furthermore, users have the ability to
 1. Choose from various basis sets, exchange-correlation, and kinetic energy density functionals.
