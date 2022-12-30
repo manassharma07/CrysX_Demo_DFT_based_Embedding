@@ -20,7 +20,7 @@ Furthermore, users have the ability to
 1. Choose from various basis sets, exchange-correlation, and kinetic energy density functionals.
 2. Choose from a template system or provide your own atomic coordinates.
 3. Use a supermolecular or monomolecular basis.
-4. Use density fitting (three-centered two-electron integrals)  or the traditional four-centered two-electron integrals.
+4. Use density fitting (three-centered two-electron integrals) or the traditional four-centered two-electron integrals for electron repulsion.
 5. Visualize the system.
 6. See the potential matrices, density matrices, molecular orbital energies, and a lot more information.
 
@@ -34,3 +34,12 @@ The same exchange-correlation functional is used for the subsystems as well as t
 The web app is available at [https://crysx-dfet-trial.streamlit.app/](https://crysx-dfet-trial.streamlit.app/).
 
 Hint: Use the sidebar menu on the left to navigate between FDE, FDE+FaT, PbE, PBE+FaT. The menu may be hidden on mobile devices so you will need to expand it first by clicking on the arrow icon in the upper-left corner.
+
+## Some background
+While implementing DFT-based embedding within the RIPER module of the [TURBOMOLE](https://www.turbomole.org/) program package (see [https://pubs.acs.org/doi/10.1021/acs.jctc.2c00380](https://pubs.acs.org/doi/10.1021/acs.jctc.2c00380)), I used PySCF for prototyping the various methods. I have repurposed that code to now work with a Streamlit GUI web app.
+
+## About me
+I am a fourth-year PhD student in Physics at Friedrich Schiller University of Jena (FSU) Germany, advised by Prof. Marek Sierka (CEO TURBOMOLE).
+My passion lies in developing codes and methods to model the light-matter interaction of hybrid systems. 
+
+You can find out more about me here: [https://manas.bragitoff.com/](https://manas.bragitoff.com/)
