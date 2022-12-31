@@ -585,11 +585,14 @@ st.sidebar.write('## Brought to you by [CrysX](https://www.bragitoff.com/crysx/)
 
 
 # Main app
-st.write('# CrysX-DEMO: Projection based Embedding (PbE)')
+st.write('# CrysX-DEMO: Projection-based Embedding (PbE)')
 st.write('This is an online demo of projection based embedding (PbE) using Gaussian basis functions. You can perform PbE calculations on the already available small test systems or use your own. NOTE: Calculations can only be performed for systems with less than 50 basis functions due to limited compute resources on the server where the web app is freely hosted.')
 st.write('PbE utilizes an embedding potential matrix of the following form')
 st.latex(r'\mathbf{V}_{\mathrm{emb}}=\mathbf{V}_{\text {nuc }}^{\mathrm{B}}+\mathbf{J}_{\text {elec }}^{\mathrm{B}}+\mathbf{X}_{\text {nadd }}+\mathbf{P}_{\mathrm{B}}')
 st.write('where we are utilizing a level shift projection operatr $\mathbf{P}_\mathrm{B}=\mu\mathbf{S}^\mathrm{AB}\mathbf{D}^\mathrm{B}\mathbf{S}^\mathrm{BA}$.')
+st.write('Here the energy is minimized only with respect to the density of subsystem A, while keeping the density of subsystem B fixed to the isolated B density.')
+st.write('Therefore, the results will not be exact, as the actual density of B in the total system will not be equal to the isolated density.')
+st.write('There are two ways in which one can perform exact subsystem DFT using PbE. One, is to employ a Freeze-and-Thaw procedure. The other is to perform a supermolecular DFT calculation and then perform orbital localization to calculate the density matrix of B.')
 # DATA for test systems
 hf_dimer_xyz = '''
 4
