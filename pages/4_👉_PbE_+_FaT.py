@@ -587,8 +587,11 @@ st.sidebar.write('## Brought to you by [CrysX](https://www.bragitoff.com/crysx/)
 
 
 # Main app
-st.write('# CrysX-DEMO: Projection based Embedding (PbE)')
-st.write('This is an online demo of projection based embedding (PbE) using Gaussian basis functions. You can perform PbE calculations on the already available small test systems or use your own. NOTE: Calculations can only be performed for systems with less than 50 basis functions due to limited compute resources on the server where the web app is freely hosted.')
+st.write('# CrysX-DEMO: Projection-based Embedding (PbE) with Freeze-and-Thaw (FaT) cycles')
+st.write('Freeze-and-Thaw refers to the process where the roles of the active (A) and environment (B) subsystems are interchanged iterativley, until either the max cycles is reached or the energies/densities are converged. You can perform PbE calculations on the already available small test systems or use your own. NOTE: Calculations can only be performed for systems with less than 50 basis functions due to limited compute resources on the server where the web app is freely hosted.')
+st.write('PbE with FaT ensures that the total energy is minimized wrt both A and B subsystem densities. As a result it is also minimized wrt the total density.')
+st.write('Therefore, PbE + FaT can also be referred to as an exact subsystem DFT method. There are alternative ways as well to perform exact PbE by employing orbital localization procedures.')
+st.write('The partitioning of the total density in subsystem DFT is not unique, and one may arrive at different subsystem densities depending on the initial guess for the subsystem densities employed during the FaT procedure.')
 st.write('PbE utilizes an embedding potential matrix of the following form')
 st.latex(r'\mathbf{V}_{\mathrm{emb}}=\mathbf{V}_{\text {nuc }}^{\mathrm{B}}+\mathbf{J}_{\text {elec }}^{\mathrm{B}}+\mathbf{X}_{\text {nadd }}+\mathbf{P}_{\mathbf{B}}')
 # DATA for test systems
