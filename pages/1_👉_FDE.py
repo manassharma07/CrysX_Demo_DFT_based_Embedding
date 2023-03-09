@@ -481,6 +481,8 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
     e_coul_densA_densA = calculateEnergy(dmatNew, J_AA)*0.5
     e_nucA_densB = nucDensB(molA, molB, molTotal, dmatB)
     e_coul_densA_nucB_densB = calculateEnergy(dmatNew, EmbdmatPot)
+    e_coul_densA_nucB = calculateEnergy(dmatNew, Vab)
+    e_coul_densA_densB = calculateEnergy(dmatNew, Jab)
     #Debug
     #print(abs(dmatNew - dmA).max())
     print('Cycles:=\t                                   '+str(cycle), flush=True)
@@ -548,7 +550,8 @@ def scf1(molB, molA, mfA, mfB, molTotal, mfTotal, dmatB, excB, Jab, Vab, max_cyc
     pot_matrices = {'nadd_KE_pot':nAdd_KE_Pot, 'nadd_XC_pot':XC_AandB_basA - XC_A2, 'coul_A':J_AA}
     energies = {'ke_cluster':ke_cluster, 'e_nn_cluster':e_nn_cluster,'e_nucA_nucB':e_nucA_nucB,'nadd_eXC':nadd_eXC,
                 'nadd_eKE':nadd_eKE,'e_nucA_densB':e_nucA_densB,'e_coul_densA_nucB_densB':e_coul_densA_nucB_densB,
-                'exc_cluster':eXC_A,'e_coul_nucA_densA':e_coul_nucA_densA, 'e_coul_densA_densA':e_coul_densA_densA} 
+                'exc_cluster':eXC_A,'e_coul_nucA_densA':e_coul_nucA_densA, 'e_coul_densA_densA':e_coul_densA_densA,
+                'e_coul_densA_nucB':e_coul_densA_nucB, 'e_coul_densA_densB':e_coul_densA_densB} 
     mo_info = {'mo_occ':mo_occ, 'mo_energy':mo_energy, 'mo_coeff':mo_coeff}
     return e_tot_Final, E_int, dmatNew, pot_matrices, energies, mo_info
 
@@ -964,7 +967,9 @@ if col2.button('Run FDE calculation'):
                 st.write('Exchange correlation energy of A =  '+str(energies['exc_cluster'])+'  a.u.')
                 st.write('Nuclear_A-Nuclear_A energy =  '+str(energies['e_nn_cluster'])+'  a.u.')
                 st.write('##### Energies due to interaction with subsystem B')
-                st.write('Electron_A-Nuclear_B + Electron_A-Electron_B energy =  '+str(energies['e_coul_densA_nucB_densB'])+'  a.u.')
+                #st.write('Electron_A-Nuclear_B + Electron_A-Electron_B energy =  '+str(energies['e_coul_densA_nucB_densB'])+'  a.u.')
+                st.write('Electron_A-Nuclear_B =  '+str(energies['e_coul_densA_nucB'])+'  a.u.')
+                st.write('Electron_A-Electron_B =  '+str(energies['e_coul_densA_densB'])+'  a.u.')
                 st.write('Non-additive kinetic energy =  '+str(energies['nadd_eKE'])+'  a.u.')
                 st.write('Non-additive exchange-correlation energy =  '+str(energies['nadd_eXC'])+'  a.u.')
                 st.write('NuclearA-NuclearB energy =  '+str(energies['e_nucA_nucB'])+'  a.u.')
