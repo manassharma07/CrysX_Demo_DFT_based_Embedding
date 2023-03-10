@@ -967,7 +967,7 @@ if col2.button('Run FDE calculation'):
                 st.write('Exchange correlation energy of A =  '+str(energies['exc_cluster'])+'  a.u.')
                 st.write('Nuclear_A-Nuclear_A energy =  '+str(energies['e_nn_cluster'])+'  a.u.')
                 st.write('##### Energies due to interaction with subsystem B')
-                #st.write('Electron_A-Nuclear_B + Electron_A-Electron_B energy =  '+str(energies['e_coul_densA_nucB_densB'])+'  a.u.')
+                st.write('Electron_A-Nuclear_B + Electron_A-Electron_B energy =  '+str(energies['e_coul_densA_nucB_densB'])+'  a.u.')
                 st.write('Electron_A-Nuclear_B =  '+str(energies['e_coul_densA_nucB'])+'  a.u.')
                 st.write('Electron_A-Electron_B =  '+str(energies['e_coul_densA_densB'])+'  a.u.')
                 st.write('Non-additive kinetic energy =  '+str(energies['nadd_eKE'])+'  a.u.')
