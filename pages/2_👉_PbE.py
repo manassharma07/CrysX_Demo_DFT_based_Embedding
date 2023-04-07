@@ -574,20 +574,20 @@ menu_items={
 
 # Sidebar stuff
 st.sidebar.write('# About')
-st.sidebar.write('### Made By [Manas Sharma](https://manas.bragitoff.com)')
+st.sidebar.write('### Made By [Manas Sharma](https://www.bragitoff.com/about/)')
 st.sidebar.write('### *Powered by*')
 st.sidebar.write('* [PySCF](https://pyscf.org/) for Molecular Integrals and DFT Calculations')
 st.sidebar.write('* [Py3Dmol](https://3dmol.csb.pitt.edu/) for Chemical System Visualizations')
 st.sidebar.write('* [Streamlit](https://streamlit.io/) for making of the Web App')
 st.sidebar.write('## Brought to you by [CrysX](https://www.bragitoff.com/crysx/)')
 st.sidebar.write('## Cite us:')
-st.sidebar.write('[Manas Sharma and Marek Sierka, Journal of Chemical Theory and Computation 2022 18 (11), 6892-6904, DOI: 10.1021/acs.jctc.2c00380](https://pubs.acs.org/doi/10.1021/acs.jctc.2c00380)')
-st.sidebar.write('[Sharma, M. & Mishra, D. (2019). J. Appl. Cryst. 52, 1449-1454.](http://scripts.iucr.org/cgi-bin/paper?S1600576719013682)')
+st.sidebar.write('Manas Sharma and Marek Sierka, [Journal of Chemical Theory and Computation 2022 18 (11), 6892-6904, DOI: 10.1021/acs.jctc.2c00380](https://pubs.acs.org/doi/10.1021/acs.jctc.2c00380)')
+st.sidebar.write('Sharma, M. & Mishra, D. (2019). [J. Appl. Cryst. 52, 1449-1454.](http://scripts.iucr.org/cgi-bin/paper?S1600576719013682)')
 st.sidebar.write('## References:')
 st.sidebar.write('### Projection based embedding (level-shift operator):')
-st.sidebar.write('[Frederick R. Manby, Martina Stella, Jason D. Goodpaster, and Thomas F. Miller III, Journal of Chemical Theory and Computation 2012 8 (8), 2564-2568 DOI: 10.1021/ct300544e](https://pubs.acs.org/doi/10.1021/ct300544e)')
+st.sidebar.write('Frederick R. Manby, Martina Stella, Jason D. Goodpaster, and Thomas F. Miller III, [Journal of Chemical Theory and Computation 2012 8 (8), 2564-2568 DOI: 10.1021/ct300544e](https://pubs.acs.org/doi/10.1021/ct300544e)')
 st.sidebar.write('### Combining PbE with Freeze-and-Thaw:')
-st.sidebar.write('[Dhabih V. Chulhai and Lasse Jensen, Journal of Chemical Theory and Computation 2015 11 (7), 3080-3088, DOI: 10.1021/acs.jctc.5b00293](https://pubs.acs.org/doi/full/10.1021/acs.jctc.5b00293)')
+st.sidebar.write('Dhabih V. Chulhai and Lasse Jensen, [Journal of Chemical Theory and Computation 2015 11 (7), 3080-3088, DOI: 10.1021/acs.jctc.5b00293](https://pubs.acs.org/doi/full/10.1021/acs.jctc.5b00293)')
 
 
 # Main app
