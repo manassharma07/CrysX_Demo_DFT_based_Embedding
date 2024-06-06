@@ -851,8 +851,8 @@ st.write('#### Set other calculation parameters')
 xc = st.selectbox('Select an exchange-correlation functional',
      ( 'PBE', 'BLYP', 'BP86', 'PW91', 'SVWN','REVPBE'))
 kedf_select = st.selectbox('Select a kinetic energy density functional',
-     ( 'GGA_K_LC94', 'LDA_K_TF', 'GGA_K_APBE', 'GGA_K_REVAPBE','GGA_K_TW2', 'electro'))
-dict_kedf = {'GGA_K_LC94':'521','LDA_K_TF':'50', 'electro':'electro', 'GGA_K_APBE':'185', 'GGA_K_REVAPBE':'55', 'GGA_K_TW2':'188'}
+     ( 'GGA_K_LC94', 'GGA_K_PG1', 'LDA_K_TF', 'GGA_K_APBE', 'GGA_K_REVAPBE','GGA_K_TW2', 'electro'))
+dict_kedf = {'GGA_K_LC94':'521', 'GGA_K_PG1':'219', 'LDA_K_TF':'50', 'electro':'electro', 'GGA_K_APBE':'185', 'GGA_K_REVAPBE':'55', 'GGA_K_TW2':'188'}
 kedf = dict_kedf[kedf_select]
 isDF =  st.checkbox('Use density fitting (Resolution of Identity)')
 exponent = st.slider('Convergence criteria', 5, 8, 7)
